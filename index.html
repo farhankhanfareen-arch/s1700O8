@@ -2,1832 +2,2151 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ShiftFlow — Employee Management</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;400;500;600;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>
-tailwind.config = {
-  theme: {
-    extend: {
-      fontFamily: {
-        display: ['Space Grotesk', 'sans-serif'],
-        body: ['DM Sans', 'sans-serif'],
-      }
-    }
-  }
-}
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ShiftFlow - Employee Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
-  :root {
-    --bg: #0f1117;
-    --bg-elevated: #161822;
-    --bg-card: #1c1f2e;
-    --bg-hover: #252839;
-    --border: #2a2d3e;
-    --fg: #e8e9ed;
-    --fg-muted: #7a7d8e;
-    --accent: #e8a43a;
-    --accent-dim: rgba(232,164,58,0.12);
-    --success: #34d399;
-    --success-dim: rgba(52,211,153,0.12);
-    --danger: #f87171;
-    --danger-dim: rgba(248,113,113,0.12);
-    --info: #60a5fa;
-    --info-dim: rgba(96,165,250,0.12);
-  }
+:root {
+  --bg: #0c0e14;
+  --bg-secondary: #13161f;
+  --card: #1a1e2b;
+  --card-hover: #212638;
+  --border: #2a2f40;
+  --fg: #e8eaf0;
+  --fg-secondary: #9ca3b8;
+  --muted: #5e657a;
+  --accent: #e8a838;
+  --accent-light: #f0c060;
+  --accent-dim: rgba(232,168,56,0.12);
+  --success: #34d399;
+  --success-dim: rgba(52,211,153,0.12);
+  --danger: #f87171;
+  --danger-dim: rgba(248,113,113,0.12);
+  --info: #60a5fa;
+  --info-dim: rgba(96,165,250,0.12);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 48px rgba(0,0,0,0.5);
+  --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:16px; scroll-behavior:smooth; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--fg);
+  min-height:100vh;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+/* 背景装饰 */
+body::before {
+  content:'';
+  position:fixed;
+  top:-30%;left:-10%;
+  width:500px;height:500px;
+  background:radial-gradient(circle,rgba(232,168,56,0.06) 0%,transparent 70%);
+  pointer-events:none;
+  z-index:0;
+}
+body::after {
+  content:'';
+  position:fixed;
+  bottom:-20%;right:-10%;
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(96,165,250,0.04) 0%,transparent 70%);
+  pointer-events:none;
+  z-index:0;
+}
+/* 滚动条 */
+::-webkit-scrollbar { width:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--muted); }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    background: var(--bg);
-    color: var(--fg);
-    font-family: 'DM Sans', sans-serif;
-    overflow-x: hidden;
-  }
+/* 布局 */
+.app-container {
+  position:relative;
+  z-index:1;
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 16px;
+  padding-bottom:100px;
+}
+/* 顶部导航 */
+.top-nav {
+  position:sticky;
+  top:0;
+  z-index:100;
+  background:rgba(12,14,20,0.85);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  margin:0 -16px;
+  padding:0 16px;
+}
+.nav-inner {
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:64px;
+}
+.nav-brand {
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+}
+.nav-brand-icon {
+  width:36px;height:36px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-light));
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#0c0e14;font-weight:900;
+}
+.nav-brand-text {
+  font-family:'Playfair Display',serif;
+  font-size:22px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent-light));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.nav-actions { display:flex;align-items:center;gap:8px; }
+.nav-btn {
+  width:40px;height:40px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--fg-secondary);
+  border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:var(--transition);
+  font-size:16px;
+}
+.nav-btn:hover { background:var(--card-hover);color:var(--fg);border-color:var(--muted); }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--fg-muted); }
+/* 底部导航 */
+.bottom-nav {
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:100;
+  background:rgba(12,14,20,0.92);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+  padding:6px 0 env(safe-area-inset-bottom,8px);
+}
+.bottom-nav-inner {
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-around;
+}
+.nav-item {
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 12px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:var(--transition);
+  color:var(--muted);
+  font-size:10px;font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+  -webkit-tap-highlight-color:transparent;
+  position:relative;
+}
+.nav-item i { font-size:20px;transition:var(--transition); }
+.nav-item.active { color:var(--accent); }
+.nav-item.active i { transform:scale(1.1); }
+.nav-item:hover { color:var(--fg-secondary); }
+.nav-item-add {
+  width:52px;height:52px;
+  background:linear-gradient(135deg,var(--accent),var(--accent-light));
+  border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  color:#0c0e14;
+  font-size:24px;
+  margin-top:-20px;
+  box-shadow:0 4px 20px rgba(232,168,56,0.3);
+  transition:var(--transition);
+}
+.nav-item-add:hover { transform:scale(1.08);box-shadow:0 6px 28px rgba(232,168,56,0.4); }
 
-  /* Background atmosphere */
-  .bg-glow {
-    position: fixed;
-    width: 600px;
-    height: 600px;
-    border-radius: 50%;
-    filter: blur(150px);
-    opacity: 0.07;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* 页面标题 */
+.page-header {
+  padding:28px 0 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.page-title {
+  font-family:'Playfair Display',serif;
+  font-size:28px;font-weight:800;
+  color:var(--fg);
+}
+.page-subtitle {
+  font-size:13px;
+  color:var(--muted);
+  margin-top:4px;
+  font-weight:400;
+}
+.header-actions { display:flex;gap:8px; }
 
-  /* Sidebar */
-  .sidebar {
-    background: var(--bg-elevated);
-    border-right: 1px solid var(--border);
-    transition: width 0.3s ease;
-  }
+/* 卡片通用 */
+.card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px;
+  transition:var(--transition);
+}
+.card:hover { border-color:var(--muted); }
 
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
-    border-radius: 10px;
-    cursor: pointer;
-    color: var(--fg-muted);
-    transition: all 0.2s;
-    font-weight: 500;
-    font-size: 14px;
-  }
-  .nav-item:hover { background: var(--bg-hover); color: var(--fg); }
-  .nav-item.active {
-    background: var(--accent-dim);
-    color: var(--accent);
-  }
-  .nav-item.active i { color: var(--accent); }
-  .nav-item i { width: 20px; text-align: center; font-size: 15px; }
+/* 统计卡片 */
+.stats-grid {
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  margin-bottom:24px;
+}
+@media(min-width:640px) { .stats-grid { grid-template-columns:repeat(4,1fr); } }
+.stat-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  position:relative;
+  overflow:hidden;
+  transition:var(--transition);
+}
+.stat-card:hover { transform:translateY(-2px);border-color:var(--muted); }
+.stat-card::after {
+  content:'';
+  position:absolute;
+  top:0;right:0;
+  width:80px;height:80px;
+  border-radius:50%;
+  opacity:0.06;
+  transform:translate(20px,-20px);
+}
+.stat-card.amber::after { background:var(--accent); }
+.stat-card.green::after { background:var(--success); }
+.stat-card.red::after { background:var(--danger); }
+.stat-card.blue::after { background:var(--info); }
+.stat-icon {
+  width:38px;height:38px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  margin-bottom:14px;
+}
+.stat-card.amber .stat-icon { background:var(--accent-dim);color:var(--accent); }
+.stat-card.green .stat-icon { background:var(--success-dim);color:var(--success); }
+.stat-card.red .stat-icon { background:var(--danger-dim);color:var(--danger); }
+.stat-card.blue .stat-icon { background:var(--info-dim);color:var(--info); }
+.stat-value {
+  font-size:26px;font-weight:800;
+  line-height:1;
+  margin-bottom:4px;
+}
+.stat-label {
+  font-size:12px;
+  color:var(--muted);
+  font-weight:500;
+  text-transform:uppercase;
+  letter-spacing:0.5px;
+}
 
-  /* Cards */
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    transition: all 0.25s;
-  }
-  .card:hover { border-color: #3a3d50; }
+/* 员工卡片网格 */
+.section-label {
+  font-size:13px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin-bottom:14px;
+  padding-left:2px;
+}
+.employee-grid {
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:14px;
+  margin-bottom:24px;
+}
+@media(min-width:640px) { .employee-grid { grid-template-columns:repeat(3,1fr); } }
+@media(min-width:900px) { .employee-grid { grid-template-columns:repeat(4,1fr); } }
+.emp-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:20px 16px;
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;
+  position:relative;
+  cursor:pointer;
+  transition:var(--transition);
+  animation:cardIn 0.4s ease both;
+}
+.emp-card:hover { transform:translateY(-3px);border-color:var(--accent);box-shadow:0 8px 30px rgba(232,168,56,0.08); }
+@keyframes cardIn {
+  from { opacity:0;transform:translateY(16px); }
+  to { opacity:1;transform:translateY(0); }
+}
+.emp-card-photo-wrap {
+  position:relative;
+  width:76px;height:76px;
+  margin-bottom:12px;
+  cursor:pointer;
+}
+.emp-card-photo {
+  width:76px;height:76px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid var(--border);
+  transition:var(--transition);
+}
+.emp-card:hover .emp-card-photo { border-color:var(--accent); }
+.emp-card-menu-btn {
+  position:absolute;
+  top:-2px;right:-2px;
+  width:26px;height:26px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--muted);
+  cursor:pointer;
+  transition:var(--transition);
+  z-index:2;
+}
+.emp-card-menu-btn:hover { background:var(--accent);color:#0c0e14;border-color:var(--accent); }
+.emp-card-name {
+  font-size:14px;font-weight:700;
+  color:var(--fg);
+  margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  max-width:100%;
+}
+.emp-card-id {
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:8px;
+  font-weight:500;
+}
+.emp-card-rate {
+  font-size:13px;
+  font-weight:700;
+  color:var(--accent);
+  background:var(--accent-dim);
+  padding:4px 12px;
+  border-radius:20px;
+}
 
-  /* Stat card */
-  .stat-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 20px 24px;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s;
-  }
-  .stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: 14px 14px 0 0;
-  }
-  .stat-card:hover { transform: translateY(-2px); border-color: #3a3d50; }
+/* 三点菜单下拉 */
+.dropdown-menu {
+  position:absolute;
+  top:100%;right:0;
+  min-width:170px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:6px;
+  z-index:50;
+  box-shadow:var(--shadow-lg);
+  display:none;
+  animation:dropIn 0.2s ease;
+}
+.dropdown-menu.show { display:block; }
+@keyframes dropIn {
+  from { opacity:0;transform:translateY(-6px) scale(0.96); }
+  to { opacity:1;transform:translateY(0) scale(1); }
+}
+.dropdown-item {
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  border-radius:6px;
+  font-size:13px;font-weight:500;
+  color:var(--fg-secondary);
+  cursor:pointer;
+  transition:var(--transition);
+}
+.dropdown-item:hover { background:var(--accent-dim);color:var(--accent); }
+.dropdown-item i { width:16px;text-align:center;font-size:13px; }
+.dropdown-item.danger:hover { background:var(--danger-dim);color:var(--danger); }
 
-  /* Input */
-  .input-field {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    color: var(--fg);
-    font-size: 14px;
-    font-family: 'DM Sans', sans-serif;
-    width: 100%;
-    transition: border-color 0.2s;
-    outline: none;
-  }
-  .input-field:focus { border-color: var(--accent); }
-  .input-field::placeholder { color: var(--fg-muted); }
+/* 模态框 */
+.modal-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.65);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  z-index:200;
+  display:none;
+  align-items:flex-end;
+  justify-content:center;
+  animation:fadeIn 0.2s ease;
+}
+.modal-overlay.show { display:flex; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal {
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:20px 20px 0 0;
+  width:100%;
+  max-width:540px;
+  max-height:90vh;
+  overflow-y:auto;
+  animation:slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+  padding-bottom:env(safe-area-inset-bottom,16px);
+}
+@media(min-width:640px) {
+  .modal-overlay { align-items:center; }
+  .modal { border-radius:var(--radius);max-height:85vh; }
+}
+@keyframes slideUp {
+  from{transform:translateY(40px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+.modal-handle {
+  width:40px;height:4px;
+  background:var(--border);
+  border-radius:2px;
+  margin:12px auto 0;
+}
+.modal-header {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 24px 12px;
+}
+.modal-title {
+  font-size:20px;font-weight:800;
+}
+.modal-close {
+  width:36px;height:36px;
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--fg-secondary);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:var(--transition);
+  font-size:14px;
+}
+.modal-close:hover { background:var(--danger-dim);color:var(--danger);border-color:var(--danger); }
+.modal-body { padding:8px 24px 24px; }
 
-  select.input-field { cursor: pointer; appearance: none; }
-  textarea.input-field { resize: vertical; min-height: 80px; }
+/* 表单 */
+.form-group { margin-bottom:18px; }
+.form-label {
+  display:block;
+  font-size:12px;font-weight:700;
+  color:var(--fg-secondary);
+  text-transform:uppercase;
+  letter-spacing:0.8px;
+  margin-bottom:8px;
+}
+.form-input,.form-select,.form-textarea {
+  width:100%;
+  padding:12px 16px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  color:var(--fg);
+  font-size:14px;
+  font-family:'DM Sans',sans-serif;
+  transition:var(--transition);
+  outline:none;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus {
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-dim);
+}
+.form-input::placeholder { color:var(--muted); }
+.form-select { cursor:pointer; appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%235e657a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+  padding-right:36px;
+}
+.form-select option { background:var(--card);color:var(--fg); }
+.form-textarea { resize:vertical;min-height:70px; }
+.form-row { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
 
-  /* Buttons */
-  .btn-primary {
-    background: var(--accent);
-    color: #0f1117;
-    font-weight: 600;
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+/* 照片上传 */
+.photo-upload {
+  width:100px;height:100px;
+  border:2px dashed var(--border);
+  border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:var(--transition);
+  margin:0 auto 16px;
+  overflow:hidden;
+  position:relative;
+}
+.photo-upload:hover { border-color:var(--accent);background:var(--accent-dim); }
+.photo-upload img {
+  width:100%;height:100%;object-fit:cover;
+  position:absolute;inset:0;
+}
+.photo-upload span { font-size:11px;color:var(--muted);margin-top:4px; }
+.photo-upload i { font-size:22px;color:var(--muted); }
+.photo-upload.has-photo span,.photo-upload.has-photo i { display:none; }
 
-  .btn-secondary {
-    background: var(--bg-hover);
-    color: var(--fg);
-    font-weight: 500;
-    padding: 10px 20px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .btn-secondary:hover { background: var(--border); }
+/* 按钮 */
+.btn {
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 24px;
+  border:none;
+  border-radius:var(--radius-sm);
+  font-size:14px;font-weight:700;
+  font-family:'DM Sans',sans-serif;
+  cursor:pointer;
+  transition:var(--transition);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-primary {
+  background:linear-gradient(135deg,var(--accent),var(--accent-light));
+  color:#0c0e14;
+  box-shadow:0 4px 16px rgba(232,168,56,0.25);
+}
+.btn-primary:hover { transform:translateY(-1px);box-shadow:0 6px 24px rgba(232,168,56,0.35); }
+.btn-secondary {
+  background:var(--card);
+  color:var(--fg-secondary);
+  border:1px solid var(--border);
+}
+.btn-secondary:hover { background:var(--card-hover);color:var(--fg); }
+.btn-danger {
+  background:var(--danger-dim);
+  color:var(--danger);
+}
+.btn-danger:hover { background:var(--danger);color:#fff; }
+.btn-sm { padding:8px 16px;font-size:12px; }
+.btn-full { width:100%; }
+.btn-group { display:flex;gap:10px;margin-top:8px; }
 
-  .btn-sm {
-    padding: 6px 12px;
-    font-size: 12px;
-    border-radius: 8px;
-  }
+/* 员工详情页 */
+.profile-header {
+  display:flex;align-items:center;gap:20px;
+  padding:24px 0;
+  border-bottom:1px solid var(--border);
+  margin-bottom:20px;
+}
+.profile-photo {
+  width:80px;height:80px;
+  border-radius:50%;
+  object-fit:cover;
+  border:3px solid var(--accent);
+  flex-shrink:0;
+}
+.profile-info { flex:1; }
+.profile-name { font-size:22px;font-weight:800;margin-bottom:2px; }
+.profile-meta { font-size:13px;color:var(--muted);margin-bottom:8px; }
+.profile-badge {
+  display:inline-block;
+  font-size:12px;font-weight:700;
+  color:var(--accent);
+  background:var(--accent-dim);
+  padding:4px 12px;
+  border-radius:20px;
+}
+.profile-stats {
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  margin-bottom:24px;
+}
+.profile-stat {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px;
+  text-align:center;
+}
+.profile-stat-val { font-size:20px;font-weight:800;color:var(--fg); }
+.profile-stat-label { font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px; }
 
-  .btn-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--border);
-    background: var(--bg-hover);
-    color: var(--fg-muted);
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 13px;
-  }
-  .btn-icon:hover { color: var(--fg); border-color: #3a3d50; }
+/* 标签页 */
+.tabs {
+  display:flex;gap:4px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:4px;
+  margin-bottom:20px;
+}
+.tab {
+  flex:1;
+  padding:10px;
+  text-align:center;
+  font-size:13px;font-weight:600;
+  color:var(--muted);
+  border-radius:6px;
+  cursor:pointer;
+  transition:var(--transition);
+}
+.tab.active { background:var(--accent);color:#0c0e14; }
+.tab:hover:not(.active) { color:var(--fg-secondary); }
 
-  /* Badge */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
+/* 列表项 */
+.list-section { margin-bottom:24px; }
+.list-item {
+  display:flex;align-items:center;gap:14px;
+  padding:14px 0;
+  border-bottom:1px solid var(--border);
+  animation:cardIn 0.3s ease both;
+}
+.list-item:last-child { border-bottom:none; }
+.list-icon {
+  width:40px;height:40px;
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;flex-shrink:0;
+}
+.list-icon.shift { background:var(--accent-dim);color:var(--accent); }
+.list-icon.advance { background:var(--danger-dim);color:var(--danger); }
+.list-content { flex:1;min-width:0; }
+.list-title { font-size:14px;font-weight:600;margin-bottom:2px; }
+.list-sub { font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.list-amount { font-size:14px;font-weight:700;flex-shrink:0; }
+.list-amount.positive { color:var(--success); }
+.list-amount.negative { color:var(--danger); }
 
-  /* Modal */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(4px);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal-content {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    padding: 28px;
-    max-width: 520px;
-    width: 90%;
-    max-height: 85vh;
-    overflow-y: auto;
-    transform: translateY(20px) scale(0.97);
-    transition: transform 0.3s;
-  }
-  .modal-overlay.open .modal-content { transform: translateY(0) scale(1); }
+/* 余额卡片 */
+.balance-card {
+  background:linear-gradient(135deg,rgba(232,168,56,0.08),rgba(232,168,56,0.02));
+  border:1px solid rgba(232,168,56,0.2);
+  border-radius:var(--radius);
+  padding:24px;
+  margin-bottom:24px;
+  text-align:center;
+}
+.balance-amount {
+  font-size:36px;font-weight:900;
+  color:var(--accent);
+  margin:8px 0;
+}
+.balance-label {
+  font-size:13px;
+  color:var(--muted);
+  font-weight:500;
+}
+.balance-row {
+  display:flex;justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid var(--border);
+  font-size:14px;
+}
+.balance-row:last-child { border-bottom:none; }
+.balance-row-label { color:var(--fg-secondary); }
+.balance-row-val { font-weight:700; }
 
-  /* Avatar */
-  .avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    object-fit: cover;
-    border: 2px solid var(--border);
-    flex-shrink: 0;
-  }
-  .avatar-lg {
-    width: 90px;
-    height: 90px;
-    border-radius: 18px;
-    border: 3px solid var(--border);
-  }
+/* 上传区域 */
+.upload-zone {
+  border:2px dashed var(--border);
+  border-radius:var(--radius);
+  padding:48px 24px;
+  text-align:center;
+  cursor:pointer;
+  transition:var(--transition);
+  margin-bottom:20px;
+}
+.upload-zone:hover,.upload-zone.dragover {
+  border-color:var(--accent);
+  background:var(--accent-dim);
+}
+.upload-zone i { font-size:40px;color:var(--muted);margin-bottom:12px; }
+.upload-zone h3 { font-size:16px;font-weight:700;margin-bottom:6px; }
+.upload-zone p { font-size:13px;color:var(--muted); }
 
-  /* Photo upload */
-  .photo-upload {
-    width: 100px;
-    height: 100px;
-    border-radius: 18px;
-    border: 2px dashed var(--border);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    overflow: hidden;
-    position: relative;
-    background: var(--bg);
-  }
-  .photo-upload:hover { border-color: var(--accent); background: var(--accent-dim); }
-  .photo-upload img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+/* 空状态 */
+.empty-state {
+  text-align:center;
+  padding:48px 24px;
+  color:var(--muted);
+}
+.empty-state i { font-size:48px;margin-bottom:16px;opacity:0.3; }
+.empty-state h3 { font-size:16px;font-weight:600;color:var(--fg-secondary);margin-bottom:6px; }
+.empty-state p { font-size:13px; }
 
-  /* Table */
-  .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-  .data-table th {
-    text-align: left;
-    padding: 12px 16px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--fg-muted);
-    border-bottom: 1px solid var(--border);
-  }
-  .data-table td {
-    padding: 14px 16px;
-    font-size: 14px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
-  }
-  .data-table tr:last-child td { border-bottom: none; }
-  .data-table tbody tr { transition: background 0.15s; }
-  .data-table tbody tr:hover { background: var(--bg-hover); }
+/* Toast通知 */
+.toast-container {
+  position:fixed;
+  top:80px;right:16px;
+  z-index:300;
+  display:flex;flex-direction:column;gap:8px;
+}
+.toast {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:14px 20px;
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;font-weight:500;
+  box-shadow:var(--shadow-lg);
+  animation:toastIn 0.3s ease,toastOut 0.3s ease 2.7s forwards;
+  min-width:260px;
+}
+.toast.success { border-left:3px solid var(--success); }
+.toast.success i { color:var(--success); }
+.toast.error { border-left:3px solid var(--danger); }
+.toast.error i { color:var(--danger); }
+.toast.info { border-left:3px solid var(--info); }
+.toast.info i { color:var(--info); }
+@keyframes toastIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+@keyframes toastOut { to{opacity:0;transform:translateX(40px)} }
 
-  /* Toast */
-  .toast-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 200;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .toast {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 20px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.5s forwards;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-  }
-  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-  @keyframes fadeOut { to { transform: translateX(100%); opacity: 0; } }
+/* 搜索框 */
+.search-wrap {
+  position:relative;
+  margin-bottom:20px;
+}
+.search-wrap i {
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:14px;
+}
+.search-wrap input {
+  width:100%;
+  padding:12px 16px 12px 40px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  color:var(--fg);
+  font-size:14px;
+  font-family:'DM Sans',sans-serif;
+  outline:none;
+  transition:var(--transition);
+}
+.search-wrap input:focus { border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim); }
+.search-wrap input::placeholder { color:var(--muted); }
 
-  /* Tab */
-  .tab-btn {
-    padding: 8px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: var(--fg-muted);
-    background: transparent;
-    border: none;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .tab-btn:hover { color: var(--fg); }
-  .tab-btn.active { background: var(--accent-dim); color: var(--accent); }
+/* 页面过渡 */
+.page { display:none;animation:pageIn 0.35s ease; }
+.page.active { display:block; }
+@keyframes pageIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-  /* Detail panel */
-  .detail-panel {
-    position: fixed;
-    top: 0;
-    right: -480px;
-    width: 460px;
-    height: 100vh;
-    background: var(--bg-elevated);
-    border-left: 1px solid var(--border);
-    z-index: 90;
-    transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
-    overflow-y: auto;
-  }
-  .detail-panel.open { right: 0; }
+/* 确认对话框 */
+.confirm-modal .modal {
+  max-width:380px;
+  text-align:center;
+}
+.confirm-icon {
+  width:56px;height:56px;
+  border-radius:50%;
+  background:var(--danger-dim);
+  color:var(--danger);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;
+  margin:0 auto 16px;
+}
+.confirm-text { font-size:14px;color:var(--fg-secondary);margin-bottom:24px;line-height:1.6; }
 
-  /* Animate on load */
-  .fade-up {
-    opacity: 0;
-    transform: translateY(16px);
-    animation: fadeUp 0.5s ease forwards;
-  }
-  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+/* Excel预览表格 */
+.preview-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+  margin:12px 0;
+}
+.preview-table th {
+  background:var(--card);
+  padding:10px 8px;
+  text-align:left;
+  font-weight:700;
+  color:var(--fg-secondary);
+  border-bottom:2px solid var(--border);
+  white-space:nowrap;
+}
+.preview-table td {
+  padding:8px;
+  border-bottom:1px solid var(--border);
+  color:var(--fg);
+  max-width:120px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 
-  /* Note card */
-  .note-card {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px;
-    position: relative;
-    transition: all 0.2s;
-  }
-  .note-card:hover { border-color: #3a3d50; }
+/* 平衡列表卡片 */
+.balance-emp-card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:18px;
+  margin-bottom:12px;
+  display:flex;align-items:center;gap:16px;
+  transition:var(--transition);
+  animation:cardIn 0.4s ease both;
+  cursor:pointer;
+}
+.balance-emp-card:hover { border-color:var(--accent);transform:translateX(4px); }
+.balance-emp-photo {
+  width:52px;height:52px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid var(--border);
+  flex-shrink:0;
+}
+.balance-emp-info { flex:1;min-width:0; }
+.balance-emp-name { font-size:15px;font-weight:700;margin-bottom:2px; }
+.balance-emp-meta { font-size:12px;color:var(--muted); }
+.balance-emp-right { text-align:right;flex-shrink:0; }
+.balance-emp-amount { font-size:18px;font-weight:800; }
+.balance-emp-amount.positive { color:var(--success); }
+.balance-emp-amount.negative { color:var(--danger); }
+.balance-emp-label { font-size:11px;color:var(--muted); }
 
-  /* Responsive */
-  @media (max-width: 768px) {
-    .sidebar { display: none; }
-    .mobile-nav { display: flex !important; }
-    .detail-panel { width: 100%; right: -100%; }
-    .stat-grid { grid-template-columns: 1fr 1fr !important; }
-  }
+/* 删除按钮 */
+.delete-btn {
+  width:28px;height:28px;
+  border:none;
+  background:var(--danger-dim);
+  color:var(--danger);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  transition:var(--transition);
+  font-size:11px;
+  flex-shrink:0;
+}
+.delete-btn:hover { background:var(--danger);color:#fff; }
 
-  /* Pulse dot */
-  .pulse-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  /* Shift type indicators */
-  .shift-bar {
-    height: 6px;
-    border-radius: 3px;
-    width: 40px;
-  }
+/* 响应式 */
+@media(max-width:380px) {
+  .stats-grid { grid-template-columns:repeat(2,1fr);gap:8px; }
+  .stat-card { padding:14px; }
+  .stat-value { font-size:22px; }
+  .employee-grid { gap:10px; }
+  .emp-card { padding:16px 12px; }
+  .emp-card-photo-wrap,.emp-card-photo { width:64px;height:64px; }
+  .page-title { font-size:22px; }
+  .form-row { grid-template-columns:1fr; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:0.01ms!important;transition-duration:0.01ms!important; }
+}
 </style>
 </head>
 <body>
 
-<!-- Background atmosphere -->
-<div class="bg-glow" style="top:-200px;left:-100px;background:var(--accent);"></div>
-<div class="bg-glow" style="bottom:-200px;right:-100px;background:#60a5fa;"></div>
-
-<!-- Toast container -->
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- Sidebar -->
-<aside class="sidebar fixed left-0 top-0 h-full w-[240px] z-50 flex flex-col py-6 px-4">
-  <div class="flex items-center gap-3 px-3 mb-8">
-    <div style="background:var(--accent);width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;">
-      <i class="fa-solid fa-bolt" style="color:#0f1117;font-size:16px;"></i>
+<!-- 顶部导航 -->
+<nav class="top-nav">
+  <div class="nav-inner">
+    <div class="nav-brand" onclick="navigate('home')">
+      <div class="nav-brand-icon">S</div>
+      <div class="nav-brand-text">ShiftFlow</div>
     </div>
-    <div>
-      <h1 class="font-display font-bold text-lg leading-tight" style="color:var(--fg);">ShiftFlow</h1>
-      <p style="font-size:10px;color:var(--fg-muted);letter-spacing:1px;text-transform:uppercase;">Management</p>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="exportData()" title="Export Data" aria-label="Export data">
+        <i class="fas fa-download"></i>
+      </button>
     </div>
   </div>
-
-  <nav class="flex flex-col gap-1 flex-1">
-    <div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
-      <i class="fa-solid fa-grid-2"></i> Dashboard
-    </div>
-    <div class="nav-item" data-page="employees" onclick="switchPage('employees')">
-      <i class="fa-solid fa-users"></i> Employees
-    </div>
-    <div class="nav-item" data-page="shifts" onclick="switchPage('shifts')">
-      <i class="fa-solid fa-clock"></i> Shifts
-    </div>
-    <div class="nav-item" data-page="payments" onclick="switchPage('payments')">
-      <i class="fa-solid fa-wallet"></i> Payments
-    </div>
-    <div class="nav-item" data-page="notes" onclick="switchPage('notes')">
-      <i class="fa-solid fa-note-sticky"></i> Notes
-    </div>
-  </nav>
-
-  <div class="card p-3 mt-4" style="background:var(--accent-dim);border-color:rgba(232,164,58,0.2);">
-    <p style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px;">Quick Tip</p>
-    <p style="font-size:11px;color:var(--fg-muted);line-height:1.5;">Click on any employee row to view their full profile and details.</p>
-  </div>
-</aside>
-
-<!-- Mobile bottom nav -->
-<nav class="mobile-nav fixed bottom-0 left-0 right-0 z-50 hidden items-center justify-around py-3 px-2" style="background:var(--bg-elevated);border-top:1px solid var(--border);">
-  <button onclick="switchPage('dashboard')" class="flex flex-col items-center gap-1 text-xs" style="color:var(--accent);">
-    <i class="fa-solid fa-grid-2 text-base"></i>Home
-  </button>
-  <button onclick="switchPage('employees')" class="flex flex-col items-center gap-1 text-xs" style="color:var(--fg-muted);">
-    <i class="fa-solid fa-users text-base"></i>Team
-  </button>
-  <button onclick="switchPage('shifts')" class="flex flex-col items-center gap-1 text-xs" style="color:var(--fg-muted);">
-    <i class="fa-solid fa-clock text-base"></i>Shifts
-  </button>
-  <button onclick="switchPage('payments')" class="flex flex-col items-center gap-1 text-xs" style="color:var(--fg-muted);">
-    <i class="fa-solid fa-wallet text-base"></i>Pay
-  </button>
-  <button onclick="switchPage('notes')" class="flex flex-col items-center gap-1 text-xs" style="color:var(--fg-muted);">
-    <i class="fa-solid fa-note-sticky text-base"></i>Notes
-  </button>
 </nav>
 
-<!-- Main content -->
-<main class="ml-[240px] min-h-screen p-8 pb-20 relative z-10" id="mainContent">
-
-  <!-- Dashboard Page -->
-  <section id="page-dashboard" class="page">
-    <div class="flex items-center justify-between mb-8 fade-up">
-      <div>
-        <h2 class="font-display font-bold text-2xl mb-1">Dashboard</h2>
-        <p style="color:var(--fg-muted);font-size:14px;">Overview of your workforce activity</p>
-      </div>
-      <button class="btn-primary" onclick="openAddEmployee()">
-        <i class="fa-solid fa-plus"></i> Add Employee
-      </button>
-    </div>
-
-    <!-- Stats -->
-    <div class="grid gap-4 mb-8 stat-grid" style="grid-template-columns: repeat(4, 1fr);">
-      <div class="stat-card fade-up" style="animation-delay:0.05s;">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);border-radius:14px 14px 0 0;"></div>
-        <div class="flex items-center justify-between mb-3">
-          <div style="width:40px;height:40px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;">
-            <i class="fa-solid fa-users" style="color:var(--accent);font-size:14px;"></i>
-          </div>
-          <span class="badge" style="background:var(--success-dim);color:var(--success);">
-            <i class="fa-solid fa-arrow-up" style="font-size:8px;"></i> Active
-          </span>
-        </div>
-        <p class="font-display font-bold text-2xl" id="statTotalEmp">0</p>
-        <p style="font-size:12px;color:var(--fg-muted);margin-top:2px;">Total Employees</p>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:0.1s;">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--success);border-radius:14px 14px 0 0;"></div>
-        <div class="flex items-center justify-between mb-3">
-          <div style="width:40px;height:40px;border-radius:10px;background:var(--success-dim);display:flex;align-items:center;justify-content:center;">
-            <i class="fa-solid fa-clock" style="color:var(--success);font-size:14px;"></i>
-          </div>
-          <span class="badge" style="background:var(--info-dim);color:var(--info);">Today</span>
-        </div>
-        <p class="font-display font-bold text-2xl" id="statOnShift">0</p>
-        <p style="font-size:12px;color:var(--fg-muted);margin-top:2px;">On Shift Now</p>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:0.15s;">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--info);border-radius:14px 14px 0 0;"></div>
-        <div class="flex items-center justify-between mb-3">
-          <div style="width:40px;height:40px;border-radius:10px;background:var(--info-dim);display:flex;align-items:center;justify-content:center;">
-            <i class="fa-solid fa-calendar-check" style="color:var(--info);font-size:14px;"></i>
-          </div>
-        </div>
-        <p class="font-display font-bold text-2xl" id="statShiftsMonth">0</p>
-        <p style="font-size:12px;color:var(--fg-muted);margin-top:2px;">Shifts This Month</p>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:0.2s;">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:#a78bfa;border-radius:14px 14px 0 0;"></div>
-        <div class="flex items-center justify-between mb-3">
-          <div style="width:40px;height:40px;border-radius:10px;background:rgba(167,139,250,0.12);display:flex;align-items:center;justify-content:center;">
-            <i class="fa-solid fa-dollar-sign" style="color:#a78bfa;font-size:14px;"></i>
-          </div>
-        </div>
-        <p class="font-display font-bold text-2xl" id="statTotalPay">$0</p>
-        <p style="font-size:12px;color:var(--fg-muted);margin-top:2px;">Total Payroll (Month)</p>
-      </div>
-    </div>
-
-    <!-- Recent activity + Today's shifts -->
-    <div class="grid gap-6" style="grid-template-columns: 1.4fr 1fr;">
-      <div class="card p-5 fade-up" style="animation-delay:0.25s;">
-        <h3 class="font-display font-semibold text-base mb-4">Recent Employees</h3>
-        <div id="recentEmployees" class="flex flex-col gap-3"></div>
-      </div>
-      <div class="card p-5 fade-up" style="animation-delay:0.3s;">
-        <h3 class="font-display font-semibold text-base mb-4">Today's Shifts</h3>
-        <div id="todayShifts" class="flex flex-col gap-3"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Employees Page -->
-  <section id="page-employees" class="page" style="display:none;">
-    <div class="flex items-center justify-between mb-6 fade-up">
-      <div>
-        <h2 class="font-display font-bold text-2xl mb-1">Employees</h2>
-        <p style="color:var(--fg-muted);font-size:14px;">Manage your team members</p>
-      </div>
-      <button class="btn-primary" onclick="openAddEmployee()">
-        <i class="fa-solid fa-plus"></i> Add Employee
-      </button>
-    </div>
-    <div class="card fade-up" style="animation-delay:0.05s;">
-      <div class="p-4 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
-        <div class="relative flex-1">
-          <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2" style="color:var(--fg-muted);font-size:13px;"></i>
-          <input type="text" class="input-field" style="padding-left:36px;" placeholder="Search employees..." id="empSearch" oninput="renderEmployees()">
-        </div>
-        <select class="input-field" style="width:160px;" id="empFilterDept" onchange="renderEmployees()">
-          <option value="">All Departments</option>
-          <option value="Kitchen">Kitchen</option>
-          <option value="Service">Service</option>
-          <option value="Management">Management</option>
-          <option value="Maintenance">Maintenance</option>
-          <option value="Security">Security</option>
-        </select>
-      </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Department</th>
-            <th>Role</th>
-            <th>Hourly Rate</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="empTableBody"></tbody>
-      </table>
-      <div id="empEmpty" class="p-12 text-center" style="display:none;">
-        <i class="fa-solid fa-user-slash text-3xl mb-3" style="color:var(--fg-muted);"></i>
-        <p style="color:var(--fg-muted);font-size:14px;">No employees found</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Shifts Page -->
-  <section id="page-shifts" class="page" style="display:none;">
-    <div class="flex items-center justify-between mb-6 fade-up">
-      <div>
-        <h2 class="font-display font-bold text-2xl mb-1">Shift Management</h2>
-        <p style="color:var(--fg-muted);font-size:14px;">Schedule and track employee shifts</p>
-      </div>
-      <button class="btn-primary" onclick="openAddShift()">
-        <i class="fa-solid fa-plus"></i> Assign Shift
-      </button>
-    </div>
-    <div class="card fade-up" style="animation-delay:0.05s;">
-      <div class="p-4 flex items-center gap-3 flex-wrap" style="border-bottom:1px solid var(--border);">
-        <input type="date" class="input-field" style="width:180px;" id="shiftDateFilter" onchange="renderShifts()">
-        <select class="input-field" style="width:160px;" id="shiftTypeFilter" onchange="renderShifts()">
-          <option value="">All Types</option>
-          <option value="Morning">Morning</option>
-          <option value="Afternoon">Afternoon</option>
-          <option value="Night">Night</option>
-        </select>
-        <select class="input-field" style="width:160px;" id="shiftStatusFilter" onchange="renderShifts()">
-          <option value="">All Status</option>
-          <option value="Scheduled">Scheduled</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-        </select>
-      </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Time</th>
-            <th>Hours</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="shiftTableBody"></tbody>
-      </table>
-      <div id="shiftEmpty" class="p-12 text-center" style="display:none;">
-        <i class="fa-solid fa-calendar-xmark text-3xl mb-3" style="color:var(--fg-muted);"></i>
-        <p style="color:var(--fg-muted);font-size:14px;">No shifts found</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Payments Page -->
-  <section id="page-payments" class="page" style="display:none;">
-    <div class="flex items-center justify-between mb-6 fade-up">
-      <div>
-        <h2 class="font-display font-bold text-2xl mb-1">Payment Management</h2>
-        <p style="color:var(--fg-muted);font-size:14px;">Track wages, bonuses, and payment history</p>
-      </div>
-      <button class="btn-primary" onclick="openAddPayment()">
-        <i class="fa-solid fa-plus"></i> Record Payment
-      </button>
-    </div>
-
-    <!-- Payment stats -->
-    <div class="grid gap-4 mb-6 stat-grid" style="grid-template-columns: repeat(3, 1fr);">
-      <div class="stat-card fade-up" style="animation-delay:0.05s;">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--success);border-radius:14px 14px 0 0;"></div>
-        <p style="font-size:12px;color:var(--fg-muted);margin-bottom:4px;">Total Paid (Month)</p>
-        <p class="font-display font-bold text-xl" id="payTotalPaid">$0</p>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:0.1s;">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent);border-radius:14px 14px 0 0;"></div>
-        <p style="font-size:12px;color:var(--fg-muted);margin-bottom:4px;">Pending Payments</p>
-        <p class="font-display font-bold text-xl" id="payPending">$0</p>
-      </div>
-      <div class="stat-card fade-up" style="animation-delay:0.15s;">
-        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--danger);border-radius:14px 14px 0 0;"></div>
-        <p style="font-size:12px;color:var(--fg-muted);margin-bottom:4px;">Overtime Hours</p>
-        <p class="font-display font-bold text-xl" id="payOvertime">0h</p>
-      </div>
-    </div>
-
-    <div class="card fade-up" style="animation-delay:0.2s;">
-      <div class="p-4 flex items-center gap-3" style="border-bottom:1px solid var(--border);">
-        <input type="month" class="input-field" style="width:180px;" id="payMonthFilter" onchange="renderPayments()">
-        <select class="input-field" style="width:160px;" id="payStatusFilter" onchange="renderPayments()">
-          <option value="">All Status</option>
-          <option value="Paid">Paid</option>
-          <option value="Pending">Pending</option>
-        </select>
-      </div>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Period</th>
-            <th>Hours Worked</th>
-            <th>Overtime</th>
-            <th>Gross Pay</th>
-            <th>Bonus</th>
-            <th>Status</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="payTableBody"></tbody>
-      </table>
-      <div id="payEmpty" class="p-12 text-center" style="display:none;">
-        <i class="fa-solid fa-receipt text-3xl mb-3" style="color:var(--fg-muted);"></i>
-        <p style="color:var(--fg-muted);font-size:14px;">No payment records found</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Notes Page -->
-  <section id="page-notes" class="page" style="display:none;">
-    <div class="flex items-center justify-between mb-6 fade-up">
-      <div>
-        <h2 class="font-display font-bold text-2xl mb-1">Employee Notes</h2>
-        <p style="color:var(--fg-muted);font-size:14px;">Descriptions, observations, and documentation</p>
-      </div>
-      <button class="btn-primary" onclick="openAddNote()">
-        <i class="fa-solid fa-plus"></i> Add Note
-      </button>
-    </div>
-    <div class="flex gap-3 mb-5 fade-up" style="animation-delay:0.05s;">
-      <select class="input-field" style="width:200px;" id="noteEmpFilter" onchange="renderNotes()">
-        <option value="">All Employees</option>
-      </select>
-      <select class="input-field" style="width:160px;" id="noteCategoryFilter" onchange="renderNotes()">
-        <option value="">All Categories</option>
-        <option value="Performance">Performance</option>
-        <option value="Behavior">Behavior</option>
-        <option value="Attendance">Attendance</option>
-        <option value="General">General</option>
-      </select>
-    </div>
-    <div id="notesGrid" class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));"></div>
-    <div id="notesEmpty" class="p-16 text-center" style="display:none;">
-      <i class="fa-solid fa-note-sticky text-3xl mb-3" style="color:var(--fg-muted);"></i>
-      <p style="color:var(--fg-muted);font-size:14px;">No notes yet. Start documenting employee information.</p>
-    </div>
-  </section>
-</main>
-
-<!-- Employee Detail Panel -->
-<div class="detail-panel" id="detailPanel">
-  <div class="p-6">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="font-display font-semibold text-lg">Employee Profile</h3>
-      <button class="btn-icon" onclick="closeDetail()"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="detailContent"></div>
-  </div>
+<!-- 主内容 -->
+<div class="app-container">
+  <!-- 首页 -->
+  <div id="page-home" class="page active"></div>
+  <!-- 添加员工 -->
+  <div id="page-add-employee" class="page"></div>
+  <!-- 添加班次 -->
+  <div id="page-add-shift" class="page"></div>
+  <!-- 添加预付款 -->
+  <div id="page-add-advance" class="page"></div>
+  <!-- Excel上传 -->
+  <div id="page-excel-upload" class="page"></div>
+  <!-- 员工余额 -->
+  <div id="page-balance" class="page"></div>
+  <!-- 员工详情 -->
+  <div id="page-employee-detail" class="page"></div>
 </div>
-<div id="detailOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:85;display:none;" onclick="closeDetail()"></div>
 
-<!-- Add Employee Modal -->
-<div class="modal-overlay" id="addEmpModal">
-  <div class="modal-content">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-display font-semibold text-lg" id="empModalTitle">Add New Employee</h3>
-      <button class="btn-icon" onclick="closeModal('addEmpModal')"><i class="fa-solid fa-xmark"></i></button>
+<!-- 底部导航 -->
+<nav class="bottom-nav">
+  <div class="bottom-nav-inner">
+    <div class="nav-item active" data-page="home" onclick="navigate('home')">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
     </div>
-    <form id="empForm" onsubmit="saveEmployee(event)">
-      <input type="hidden" id="empEditId">
-      <div class="flex justify-center mb-5">
-        <div class="photo-upload" id="photoUpload" onclick="document.getElementById('photoInput').click()">
-          <i class="fa-solid fa-camera" style="color:var(--fg-muted);font-size:20px;" id="photoIcon"></i>
-          <span style="font-size:10px;color:var(--fg-muted);margin-top:4px;" id="photoText">Upload Photo</span>
-          <img id="photoPreview" style="display:none;">
-          <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="previewPhoto(event)">
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">First Name *</label>
-          <input type="text" class="input-field" id="empFirstName" required>
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Last Name *</label>
-          <input type="text" class="input-field" id="empLastName" required>
-        </div>
-      </div>
-      <div class="mb-3">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Email *</label>
-        <input type="email" class="input-field" id="empEmail" required>
-      </div>
-      <div class="mb-3">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Phone</label>
-        <input type="tel" class="input-field" id="empPhone">
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Department *</label>
-          <div style="position:relative;">
-            <select class="input-field" id="empDept" required>
-              <option value="">Select...</option>
-              <option value="Kitchen">Kitchen</option>
-              <option value="Service">Service</option>
-              <option value="Management">Management</option>
-              <option value="Maintenance">Maintenance</option>
-              <option value="Security">Security</option>
-            </select>
-            <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-          </div>
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Role *</label>
-          <input type="text" class="input-field" id="empRole" required placeholder="e.g. Chef, Waiter">
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Hourly Rate ($) *</label>
-          <input type="number" class="input-field" id="empRate" required min="0" step="0.50">
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Status</label>
-          <div style="position:relative;">
-            <select class="input-field" id="empStatus">
-              <option value="Active">Active</option>
-              <option value="On Leave">On Leave</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-            <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-          </div>
-        </div>
-      </div>
-      <div class="mb-5">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Description / Bio</label>
-        <textarea class="input-field" id="empBio" placeholder="Brief description about the employee..."></textarea>
-      </div>
-      <div class="flex gap-3 justify-end">
-        <button type="button" class="btn-secondary" onclick="closeModal('addEmpModal')">Cancel</button>
-        <button type="submit" class="btn-primary" id="empSubmitBtn">Add Employee</button>
-      </div>
-    </form>
+    <div class="nav-item" data-page="balance" onclick="navigate('balance')">
+      <i class="fas fa-wallet"></i>
+      <span>Balance</span>
+    </div>
+    <div class="nav-item" data-page="add" onclick="showAddMenu()">
+      <div class="nav-item-add"><i class="fas fa-plus"></i></div>
+    </div>
+    <div class="nav-item" data-page="excel-upload" onclick="navigate('excel-upload')">
+      <i class="fas fa-file-excel"></i>
+      <span>Upload</span>
+    </div>
+    <div class="nav-item" data-page="add-employee" onclick="navigate('add-employee')">
+      <i class="fas fa-user-plus"></i>
+      <span>Add</span>
+    </div>
+  </div>
+</nav>
+
+<!-- 模态框容器 -->
+<div id="modal-overlay" class="modal-overlay" onclick="closeModalOnOverlay(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-handle"></div>
+    <div id="modal-inner"></div>
   </div>
 </div>
 
-<!-- Add Shift Modal -->
-<div class="modal-overlay" id="addShiftModal">
-  <div class="modal-content">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-display font-semibold text-lg">Assign Shift</h3>
-      <button class="btn-icon" onclick="closeModal('addShiftModal')"><i class="fa-solid fa-xmark"></i></button>
+<!-- 确认对话框 -->
+<div id="confirm-overlay" class="modal-overlay confirm-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-body" style="padding:28px 24px;">
+      <div class="confirm-icon"><i class="fas fa-trash-alt"></i></div>
+      <h3 style="font-size:18px;font-weight:800;margin-bottom:8px;" id="confirm-title">Delete?</h3>
+      <p class="confirm-text" id="confirm-text">This action cannot be undone.</p>
+      <div class="btn-group" style="justify-content:center;">
+        <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+        <button class="btn btn-danger" id="confirm-action-btn">Delete</button>
+      </div>
     </div>
-    <form onsubmit="saveShift(event)">
-      <input type="hidden" id="shiftEditId">
-      <div class="mb-3">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Employee *</label>
-        <div style="position:relative;">
-          <select class="input-field" id="shiftEmp" required></select>
-          <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Date *</label>
-          <input type="date" class="input-field" id="shiftDate" required>
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Shift Type *</label>
-          <div style="position:relative;">
-            <select class="input-field" id="shiftType" required>
-              <option value="">Select...</option>
-              <option value="Morning">Morning</option>
-              <option value="Afternoon">Afternoon</option>
-              <option value="Night">Night</option>
-            </select>
-            <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-          </div>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-5">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Start Time *</label>
-          <input type="time" class="input-field" id="shiftStart" required>
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">End Time *</label>
-          <input type="time" class="input-field" id="shiftEnd" required>
-        </div>
-      </div>
-      <div class="flex gap-3 justify-end">
-        <button type="button" class="btn-secondary" onclick="closeModal('addShiftModal')">Cancel</button>
-        <button type="submit" class="btn-primary">Assign Shift</button>
-      </div>
-    </form>
   </div>
 </div>
 
-<!-- Add Payment Modal -->
-<div class="modal-overlay" id="addPayModal">
-  <div class="modal-content">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-display font-semibold text-lg">Record Payment</h3>
-      <button class="btn-icon" onclick="closeModal('addPayModal')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form onsubmit="savePayment(event)">
-      <input type="hidden" id="payEditId">
-      <div class="mb-3">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Employee *</label>
-        <div style="position:relative;">
-          <select class="input-field" id="payEmp" required></select>
-          <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Period (Month) *</label>
-          <input type="month" class="input-field" id="payPeriod" required>
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Status</label>
-          <div style="position:relative;">
-            <select class="input-field" id="payStatus">
-              <option value="Pending">Pending</option>
-              <option value="Paid">Paid</option>
-            </select>
-            <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-          </div>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Hours Worked *</label>
-          <input type="number" class="input-field" id="payHours" required min="0" step="0.5">
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Overtime Hours</label>
-          <input type="number" class="input-field" id="payOvertime" min="0" step="0.5" value="0">
-        </div>
-      </div>
-      <div class="mb-5">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Bonus ($)</label>
-        <input type="number" class="input-field" id="payBonus" min="0" step="0.01" value="0">
-      </div>
-      <div class="flex gap-3 justify-end">
-        <button type="button" class="btn-secondary" onclick="closeModal('addPayModal')">Cancel</button>
-        <button type="submit" class="btn-primary">Save Payment</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Add Note Modal -->
-<div class="modal-overlay" id="addNoteModal">
-  <div class="modal-content">
-    <div class="flex items-center justify-between mb-5">
-      <h3 class="font-display font-semibold text-lg">Add Note</h3>
-      <button class="btn-icon" onclick="closeModal('addNoteModal')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <form onsubmit="saveNote(event)">
-      <input type="hidden" id="noteEditId">
-      <div class="mb-3">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Employee *</label>
-        <div style="position:relative;">
-          <select class="input-field" id="noteEmp" required></select>
-          <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Category *</label>
-          <div style="position:relative;">
-            <select class="input-field" id="noteCategory" required>
-              <option value="">Select...</option>
-              <option value="Performance">Performance</option>
-              <option value="Behavior">Behavior</option>
-              <option value="Attendance">Attendance</option>
-              <option value="General">General</option>
-            </select>
-            <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-          </div>
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Priority</label>
-          <div style="position:relative;">
-            <select class="input-field" id="notePriority">
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-            </select>
-            <i class="fa-solid fa-chevron-down" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--fg-muted);font-size:10px;pointer-events:none;"></i>
-          </div>
-        </div>
-      </div>
-      <div class="mb-5">
-        <label style="font-size:12px;color:var(--fg-muted);display:block;margin-bottom:4px;">Note Content *</label>
-        <textarea class="input-field" id="noteContent" required placeholder="Write your note here..." style="min-height:120px;"></textarea>
-      </div>
-      <div class="flex gap-3 justify-end">
-        <button type="button" class="btn-secondary" onclick="closeModal('addNoteModal')">Cancel</button>
-        <button type="submit" class="btn-primary">Save Note</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Confirm Delete Modal -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal-content" style="max-width:400px;text-align:center;">
-    <div style="width:56px;height:56px;border-radius:16px;background:var(--danger-dim);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-      <i class="fa-solid fa-trash" style="color:var(--danger);font-size:20px;"></i>
-    </div>
-    <h3 class="font-display font-semibold text-lg mb-2">Confirm Delete</h3>
-    <p style="color:var(--fg-muted);font-size:14px;margin-bottom:20px;" id="confirmText">Are you sure you want to delete this item?</p>
-    <div class="flex gap-3 justify-center">
-      <button class="btn-secondary" onclick="closeModal('confirmModal')">Cancel</button>
-      <button class="btn-primary" style="background:var(--danger);" id="confirmDeleteBtn" onclick="">Delete</button>
-    </div>
-  </div>
-</div>
+<!-- Toast容器 -->
+<div class="toast-container" id="toast-container"></div>
 
 <script>
-// ==================== DATA LAYER ====================
-function getData(key) {
-  try { return JSON.parse(localStorage.getItem('sf_' + key)) || []; }
-  catch { return []; }
+/* ========================================
+   数据管理层
+======================================== */
+const STORAGE_KEY = 'shiftflow_data';
+
+// 默认数据结构
+function getDefaultData() {
+  return { employees: [], nextId: 1 };
 }
-function setData(key, data) {
-  localStorage.setItem('sf_' + key, JSON.stringify(data));
+
+// 加载数据
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) { console.error('Data load error:', e); }
+  return getDefaultData();
 }
-function genId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 5); }
 
-// Seed initial data if empty
-function seedData() {
-  if (getData('employees').length > 0) return;
+// 保存数据
+function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) { console.error('Data save error:', e); }
+}
 
-  const photos = [
-    'https://picsum.photos/seed/emp1/200/200.jpg',
-    'https://picsum.photos/seed/emp2/200/200.jpg',
-    'https://picsum.photos/seed/emp3/200/200.jpg',
-    'https://picsum.photos/seed/emp4/200/200.jpg',
-    'https://picsum.photos/seed/emp5/200/200.jpg',
-    'https://picsum.photos/seed/emp6/200/200.jpg',
-  ];
+let appData = loadData();
 
-  const employees = [
-    { id: genId(), firstName: 'Marcus', lastName: 'Chen', email: 'marcus@shiftflow.com', phone: '(555) 201-3344', department: 'Kitchen', role: 'Head Chef', rate: 32, status: 'Active', photo: photos[0], bio: 'Experienced head chef with 12 years in fine dining. Specializes in Asian fusion cuisine.', createdAt: Date.now() - 86400000 * 30 },
-    { id: genId(), firstName: 'Sofia', lastName: 'Rodriguez', email: 'sofia@shiftflow.com', phone: '(555) 302-4455', department: 'Service', role: 'Floor Manager', rate: 26, status: 'Active', photo: photos[1], bio: 'Excellent leadership skills with a focus on customer satisfaction and team coordination.', createdAt: Date.now() - 86400000 * 25 },
-    { id: genId(), firstName: 'James', lastName: 'Okafor', email: 'james@shiftflow.com', phone: '(555) 403-5566', department: 'Maintenance', role: 'Facilities Lead', rate: 22, status: 'Active', photo: photos[2], bio: 'Skilled technician handling all facility maintenance and equipment repairs.', createdAt: Date.now() - 86400000 * 20 },
-    { id: genId(), firstName: 'Aisha', lastName: 'Patel', email: 'aisha@shiftflow.com', phone: '(555) 504-6677', department: 'Management', role: 'Operations Coordinator', rate: 35, status: 'Active', photo: photos[3], bio: 'Oversees daily operations, scheduling, and cross-department communication.', createdAt: Date.now() - 86400000 * 15 },
-    { id: genId(), firstName: 'Liam', lastName: 'Byrne', email: 'liam@shiftflow.com', phone: '(555) 605-7788', department: 'Security', role: 'Security Supervisor', rate: 24, status: 'Active', photo: photos[4], bio: 'Former law enforcement professional ensuring safety and security protocols.', createdAt: Date.now() - 86400000 * 10 },
-    { id: genId(), firstName: 'Elena', lastName: 'Volkov', email: 'elena@shiftflow.com', phone: '(555) 706-8899', department: 'Kitchen', role: 'Pastry Chef', rate: 28, status: 'On Leave', photo: photos[5], bio: 'Creative pastry specialist with a passion for artisan desserts and bread.', createdAt: Date.now() - 86400000 * 5 },
-  ];
-  setData('employees', employees);
+// 获取员工
+function getEmployee(id) {
+  return appData.employees.find(e => e.id === id);
+}
 
-  const today = new Date();
-  const fmt = d => d.toISOString().split('T')[0];
-  const shifts = [];
-  const types = ['Morning', 'Afternoon', 'Night'];
-  const times = { Morning: ['06:00', '14:00'], Afternoon: ['14:00', '22:00'], Night: ['22:00', '06:00'] };
+// 添加员工
+function addEmployee(emp) {
+  emp.id = appData.nextId++;
+  emp.shifts = [];
+  emp.advances = [];
+  appData.employees.push(emp);
+  saveData(appData);
+  return emp;
+}
 
-  // Generate shifts for this month
-  for (let d = 0; d < 15; d++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - d);
-    const numShifts = 2 + Math.floor(Math.random() * 3);
-    const shuffled = [...employees].sort(() => Math.random() - 0.5).slice(0, numShifts);
-    shuffled.forEach(emp => {
-      if (emp.status === 'On Leave' && d < 5) return;
-      const type = types[Math.floor(Math.random() * types.length)];
-      const [start, end] = times[type];
-      let status = 'Completed';
-      if (d === 0) status = Math.random() > 0.5 ? 'Active' : 'Scheduled';
-      else if (d === 1) status = 'Completed';
+// 删除员工
+function deleteEmployee(id) {
+  appData.employees = appData.employees.filter(e => e.id !== id);
+  saveData(appData);
+}
 
-      shifts.push({
-        id: genId(),
-        employeeId: emp.id,
-        date: fmt(date),
-        type,
-        start,
-        end,
-        status,
-        createdAt: Date.now() - d * 86400000
-      });
-    });
-  }
-  setData('shifts', shifts);
+// 添加班次
+function addShift(empId, shift) {
+  const emp = getEmployee(empId);
+  if (!emp) return null;
+  // 计算该日期的下一个罗马数字
+  const dateShifts = emp.shifts.filter(s => s.date === shift.date);
+  const nextNum = dateShifts.length + 1;
+  shift.shiftNumber = nextNum;
+  shift.shiftRoman = toRoman(nextNum);
+  shift.payment = emp.rate;
+  emp.shifts.push(shift);
+  // 按日期排序
+  emp.shifts.sort((a, b) => new Date(a.date) - new Date(b.date));
+  saveData(appData);
+  return shift;
+}
 
-  // Generate payments for last 2 months
-  const payments = [];
-  const thisMonth = today.toISOString().slice(0, 7);
-  const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().slice(0, 7);
+// 删除班次
+function deleteShift(empId, shiftIndex) {
+  const emp = getEmployee(empId);
+  if (!emp || !emp.shifts[shiftIndex]) return;
+  const deletedDate = emp.shifts[shiftIndex].date;
+  emp.shifts.splice(shiftIndex, 1);
+  // 重新编号同日期的班次
+  renumberShifts(emp, deletedDate);
+  saveData(appData);
+}
 
-  employees.forEach(emp => {
-    [lastMonth, thisMonth].forEach(period => {
-      const hours = 120 + Math.floor(Math.random() * 80);
-      const ot = Math.floor(Math.random() * 15);
-      const bonus = Math.random() > 0.6 ? Math.floor(Math.random() * 300) : 0;
-      payments.push({
-        id: genId(),
-        employeeId: emp.id,
-        period,
-        hours,
-        overtime: ot,
-        bonus,
-        grossPay: (hours * emp.rate) + (ot * emp.rate * 1.5) + bonus,
-        status: period === thisMonth ? 'Pending' : 'Paid',
-        createdAt: Date.now()
-      });
-    });
+// 重新编号某日期的班次
+function renumberShifts(emp, date) {
+  const dateShifts = emp.shifts.filter(s => s.date === date);
+  dateShifts.forEach((s, i) => {
+    s.shiftNumber = i + 1;
+    s.shiftRoman = toRoman(i + 1);
   });
-  setData('payments', payments);
+}
 
-  // Seed notes
-  const notes = [
-    { id: genId(), employeeId: employees[0].id, category: 'Performance', priority: 'High', content: 'Outstanding performance during the weekend dinner service. Managed to handle 150+ covers with zero complaints. Consider for promotion review.', createdAt: Date.now() - 86400000 * 2 },
-    { id: genId(), employeeId: employees[1].id, category: 'Attendance', priority: 'Medium', content: 'Arrived 15 minutes late on Tuesday and Thursday. Had a conversation about punctuality expectations. Promised to improve next week.', createdAt: Date.now() - 86400000 * 3 },
-    { id: genId(), employeeId: employees[2].id, category: 'General', priority: 'Low', content: 'Completed HVAC maintenance ahead of schedule. System running at optimal efficiency. Great proactive work.', createdAt: Date.now() - 86400000 * 5 },
-    { id: genId(), employeeId: employees[3].id, category: 'Performance', priority: 'High', content: 'Successfully reorganized the shift scheduling system, reducing overlap by 20% and cutting overtime costs significantly.', createdAt: Date.now() - 86400000 * 7 },
-    { id: genId(), employeeId: employees[4].id, category: 'Behavior', priority: 'Medium', content: 'Handled a difficult situation with a disruptive visitor professionally. Followed all protocols correctly. Commended by team.', createdAt: Date.now() - 86400000 * 4 },
-    { id: genId(), employeeId: employees[5].id, category: 'General', priority: 'Low', content: 'On approved leave for family reasons. Expected return in two weeks. Cross-training plan prepared for coverage.', createdAt: Date.now() - 86400000 * 1 },
-  ];
-  setData('notes', notes);
+// 添加预付款
+function addAdvance(empId, advance) {
+  const emp = getEmployee(empId);
+  if (!emp) return null;
+  emp.advances.push(advance);
+  emp.advances.sort((a, b) => new Date(a.date) - new Date(b.date));
+  saveData(appData);
+  return advance;
 }
-seedData();
 
-// ==================== UTILITY ====================
-function getEmp(id) { return getData('employees').find(e => e.id === id); }
-function getEmpName(id) {
-  const e = getEmp(id);
-  return e ? `${e.firstName} ${e.lastName}` : 'Unknown';
+// 删除预付款
+function deleteAdvance(empId, advIndex) {
+  const emp = getEmployee(empId);
+  if (!emp || !emp.advances[advIndex]) return;
+  emp.advances.splice(advIndex, 1);
+  saveData(appData);
 }
-function getEmpPhoto(id) {
-  const e = getEmp(id);
-  return e ? (e.photo || '') : '';
+
+// 搜索员工
+function searchEmployees(query) {
+  if (!query) return appData.employees;
+  const q = query.toLowerCase().trim();
+  return appData.employees.filter(e =>
+    e.name.toLowerCase().includes(q) ||
+    e.empId.toLowerCase().includes(q)
+  );
 }
-function fmtDate(dateStr) {
+
+/* ========================================
+   罗马数字转换
+======================================== */
+function toRoman(num) {
+  if (num <= 0 || num > 3999) return String(num);
+  const vals = [1000,900,500,400,100,90,50,40,10,9,5,4,1];
+  const syms = ['M','CM','D','CD','C','XC','L','XL','X','IX','V','IV','I'];
+  let result = '';
+  for (let i = 0; i < vals.length; i++) {
+    while (num >= vals[i]) {
+      result += syms[i];
+      num -= vals[i];
+    }
+  }
+  return result;
+}
+
+/* ========================================
+   日期格式化
+======================================== */
+function formatDate(dateStr) {
+  if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-function fmtMonth(monthStr) {
-  const [y, m] = monthStr.split('-');
-  const d = new Date(parseInt(y), parseInt(m) - 1);
-  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
-function calcHours(start, end) {
-  const [sh, sm] = start.split(':').map(Number);
-  const [eh, em] = end.split(':').map(Number);
-  let diff = (eh * 60 + em) - (sh * 60 + sm);
-  if (diff < 0) diff += 24 * 60;
-  return Math.round(diff / 60 * 10) / 10;
-}
-function getShiftColor(type) {
-  return { Morning: 'var(--accent)', Afternoon: 'var(--info)', Night: '#a78bfa' }[type] || 'var(--fg-muted)';
-}
-function getStatusBadge(status) {
-  const map = {
-    Active: { bg: 'var(--success-dim)', color: 'var(--success)', icon: 'fa-circle' },
-    'On Leave': { bg: 'rgba(251,191,36,0.12)', color: '#fbbf24', icon: 'fa-circle' },
-    Inactive: { bg: 'var(--danger-dim)', color: 'var(--danger)', icon: 'fa-circle' },
-    Scheduled: { bg: 'var(--info-dim)', color: 'var(--info)', icon: 'fa-clock' },
-    Completed: { bg: 'var(--success-dim)', color: 'var(--success)', icon: 'fa-check' },
-    Paid: { bg: 'var(--success-dim)', color: 'var(--success)', icon: 'fa-check' },
-    Pending: { bg: 'rgba(251,191,36,0.12)', color: '#fbbf24', icon: 'fa-hourglass-half' },
-  };
-  const s = map[status] || { bg: 'var(--bg-hover)', color: 'var(--fg-muted)', icon: 'fa-circle' };
-  return `<span class="badge" style="background:${s.bg};color:${s.color};"><i class="fa-solid ${s.icon}" style="font-size:6px;"></i>${status}</span>`;
-}
-function getCatColor(cat) {
-  return { Performance: 'var(--accent)', Behavior: 'var(--danger)', Attendance: 'var(--info)', General: 'var(--success)' }[cat] || 'var(--fg-muted)';
-}
-function getPriorityDot(p) {
-  return { Low: 'var(--success)', Medium: '#fbbf24', High: 'var(--danger)' }[p] || 'var(--fg-muted)';
-}
-function defaultPhoto(name) {
-  return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#1c1f2e"/><text x="100" y="115" text-anchor="middle" fill="#7a7d8e" font-family="sans-serif" font-size="64" font-weight="bold">${(name||'?')[0]}</text></svg>`)}`;
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
-// ==================== TOAST ====================
-function showToast(msg, type = 'success') {
-  const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
-  const colors = { success: 'var(--success)', error: 'var(--danger)', info: 'var(--info)' };
-  const container = document.getElementById('toastContainer');
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.innerHTML = `<i class="fa-solid ${icons[type]}" style="color:${colors[type]};font-size:16px;"></i><span>${msg}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 
-// ==================== MODAL ====================
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
-// ==================== NAVIGATION ====================
-function switchPage(page) {
-  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
-  document.getElementById('page-' + page).style.display = 'block';
-  document.querySelectorAll('.nav-item').forEach(n => {
-    n.classList.toggle('active', n.dataset.page === page);
-  });
-  // Update mobile nav colors
-  document.querySelectorAll('.mobile-nav button').forEach((btn, i) => {
-    const pages = ['dashboard', 'employees', 'shifts', 'payments', 'notes'];
-    btn.style.color = pages[i] === page ? 'var(--accent)' : 'var(--fg-muted)';
-  });
-  // Refresh page data
-  if (page === 'dashboard') refreshDashboard();
-  if (page === 'employees') renderEmployees();
-  if (page === 'shifts') renderShifts();
-  if (page === 'payments') renderPayments();
-  if (page === 'notes') { populateNoteFilters(); renderNotes(); }
+/* ========================================
+   货币格式化
+======================================== */
+function formatCurrency(amount) {
+  return parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
-// ==================== DASHBOARD ====================
-function refreshDashboard() {
-  const emps = getData('employees');
-  const shifts = getData('shifts');
-  const payments = getData('payments');
-  const today = new Date().toISOString().split('T')[0];
-  const thisMonth = new Date().toISOString().slice(0, 7);
+/* ========================================
+   导航系统
+======================================== */
+let currentPage = 'home';
+let currentDetailId = null;
 
-  document.getElementById('statTotalEmp').textContent = emps.filter(e => e.status === 'Active').length;
-  document.getElementById('statOnShift').textContent = shifts.filter(s => s.date === today && s.status === 'Active').length;
-  document.getElementById('statShiftsMonth').textContent = shifts.filter(s => s.date.startsWith(thisMonth)).length;
+function navigate(page, params) {
+  // 关闭所有下拉菜单
+  document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
 
-  const totalPay = payments.filter(p => p.period === thisMonth).reduce((sum, p) => sum + (p.grossPay || 0), 0);
-  document.getElementById('statTotalPay').textContent = '$' + totalPay.toLocaleString();
-
-  // Recent employees
-  const recent = [...emps].sort((a, b) => b.createdAt - a.createdAt).slice(0, 5);
-  document.getElementById('recentEmployees').innerHTML = recent.map(emp => `
-    <div class="flex items-center gap-3 p-2 rounded-lg cursor-pointer" style="transition:background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''" onclick="openDetail('${emp.id}')">
-      <img src="${emp.photo || defaultPhoto(emp.firstName)}" class="avatar" alt="${emp.firstName}" onerror="this.src='${defaultPhoto(emp.firstName)}'">
-      <div class="flex-1 min-w-0">
-        <p class="font-medium text-sm truncate">${emp.firstName} ${emp.lastName}</p>
-        <p style="font-size:12px;color:var(--fg-muted);">${emp.role} — ${emp.department}</p>
-      </div>
-      ${getStatusBadge(emp.status)}
-    </div>
-  `).join('');
-
-  // Today's shifts
-  const todayShifts = shifts.filter(s => s.date === today).slice(0, 5);
-  document.getElementById('todayShifts').innerHTML = todayShifts.length === 0
-    ? '<p style="color:var(--fg-muted);font-size:13px;text-align:center;padding:20px;">No shifts scheduled for today</p>'
-    : todayShifts.map(s => {
-      const color = getShiftColor(s.type);
-      return `
-      <div class="flex items-center gap-3 p-2 rounded-lg" style="transition:background 0.15s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background=''">
-        <div class="shift-bar" style="background:${color};"></div>
-        <div class="flex-1 min-w-0">
-          <p class="font-medium text-sm truncate">${getEmpName(s.employeeId)}</p>
-          <p style="font-size:12px;color:var(--fg-muted);">${s.type} · ${s.start} - ${s.end}</p>
-        </div>
-        ${getStatusBadge(s.status)}
-      </div>`;
-    }).join('');
-}
-
-// ==================== EMPLOYEES ====================
-function renderEmployees() {
-  const emps = getData('employees');
-  const search = document.getElementById('empSearch').value.toLowerCase();
-  const dept = document.getElementById('empFilterDept').value;
-
-  let filtered = emps.filter(e => {
-    const matchSearch = `${e.firstName} ${e.lastName} ${e.email} ${e.role}`.toLowerCase().includes(search);
-    const matchDept = !dept || e.department === dept;
-    return matchSearch && matchDept;
-  });
-
-  const tbody = document.getElementById('empTableBody');
-  const empty = document.getElementById('empEmpty');
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
+  currentPage = page;
+  // 渲染页面
+  switch(page) {
+    case 'home': renderHomePage(); break;
+    case 'add-employee': renderAddEmployeePage(); break;
+    case 'add-shift': renderAddShiftPage(params); break;
+    case 'add-advance': renderAddAdvancePage(params); break;
+    case 'excel-upload': renderExcelUploadPage(); break;
+    case 'balance': renderBalancePage(); break;
+    case 'employee-detail': renderEmployeeDetailPage(params); break;
   }
-  empty.style.display = 'none';
+  // 更新页面显示
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  // 更新底部导航高亮
+  document.querySelectorAll('.bottom-nav .nav-item').forEach(n => {
+    n.classList.remove('active');
+    if (n.dataset.page === page) n.classList.add('active');
+  });
+  // 滚动到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-  tbody.innerHTML = filtered.map(emp => `
-    <tr style="cursor:pointer;" onclick="openDetail('${emp.id}')">
-      <td>
-        <div class="flex items-center gap-3">
-          <img src="${emp.photo || defaultPhoto(emp.firstName)}" class="avatar" alt="${emp.firstName}" onerror="this.src='${defaultPhoto(emp.firstName)}'">
-          <div>
-            <p class="font-medium text-sm">${emp.firstName} ${emp.lastName}</p>
-            <p style="font-size:12px;color:var(--fg-muted);">${emp.email}</p>
+/* ========================================
+   添加菜单（中间+号按钮）
+======================================== */
+function showAddMenu() {
+  const html = `
+    <div class="modal-header">
+      <h2 class="modal-title">Quick Add</h2>
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="dropdown-item" onclick="closeModal();navigate('add-employee')" style="padding:16px 14px;font-size:15px;border-radius:10px;border:1px solid var(--border);">
+          <i class="fas fa-user-plus" style="color:var(--success);width:20px;font-size:16px;"></i>
+          <span>Add New Employee</span>
+        </div>
+        <div class="dropdown-item" onclick="closeModal();navigate('add-shift')" style="padding:16px 14px;font-size:15px;border-radius:10px;border:1px solid var(--border);">
+          <i class="fas fa-clock" style="color:var(--accent);width:20px;font-size:16px;"></i>
+          <span>Add Shift</span>
+        </div>
+        <div class="dropdown-item" onclick="closeModal();navigate('add-advance')" style="padding:16px 14px;font-size:15px;border-radius:10px;border:1px solid var(--border);">
+          <i class="fas fa-money-bill-wave" style="color:var(--danger);width:20px;font-size:16px;"></i>
+          <span>Add Advance Payment</span>
+        </div>
+      </div>
+    </div>
+  `;
+  showModal(html);
+}
+
+/* ========================================
+   模态框系统
+======================================== */
+function showModal(html) {
+  document.getElementById('modal-inner').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+function closeModalOnOverlay(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+/* ========================================
+   确认对话框
+======================================== */
+let confirmCallback = null;
+
+function showConfirm(title, text, callback) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent = text;
+  confirmCallback = callback;
+  document.getElementById('confirm-action-btn').onclick = () => {
+    if (confirmCallback) confirmCallback();
+    closeConfirm();
+  };
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  confirmCallback = null;
+}
+
+/* ========================================
+   Toast通知
+======================================== */
+function showToast(message, type = 'success') {
+  const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i><span>${message}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { if (toast.parentNode) toast.remove(); }, 3200);
+}
+
+/* ========================================
+   首页渲染
+======================================== */
+function renderHomePage() {
+  const totalShifts = appData.employees.reduce((s, e) => s + e.shifts.length, 0);
+  const totalAdvance = appData.employees.reduce((s, e) => s + e.advances.reduce((a, adv) => a + parseFloat(adv.amount || 0), 0), 0);
+  const totalPayment = appData.employees.reduce((s, e) => s + e.shifts.length * parseFloat(e.rate || 0), 0);
+  const pendingBalance = totalPayment - totalAdvance;
+
+  let html = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Dashboard</h1>
+        <p class="page-subtitle">Manage your workforce efficiently</p>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card amber">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-value">${appData.employees.length}</div>
+        <div class="stat-label">Employees</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-value">${totalShifts}</div>
+        <div class="stat-label">Total Shifts</div>
+      </div>
+      <div class="stat-card red">
+        <div class="stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="stat-value">${formatCurrency(totalAdvance)}</div>
+        <div class="stat-label">Advances</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+        <div class="stat-value">${formatCurrency(pendingBalance)}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" id="home-search" placeholder="Search by name or ID..." oninput="filterHomeEmployees(this.value)" aria-label="Search employees">
+    </div>
+    <div class="section-label">All Employees</div>
+    <div class="employee-grid" id="employee-grid">
+  `;
+
+  if (appData.employees.length === 0) {
+    html += `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <i class="fas fa-user-plus"></i>
+        <h3>No employees yet</h3>
+        <p>Tap the + button to add your first employee</p>
+      </div>
+    `;
+  } else {
+    appData.employees.forEach((emp, idx) => {
+      html += renderEmployeeCard(emp, idx);
+    });
+  }
+
+  html += `</div>`;
+  document.getElementById('page-home').innerHTML = html;
+}
+
+function renderEmployeeCard(emp, idx) {
+  const photoSrc = emp.photo || `https://picsum.photos/seed/sf${emp.id}/200/200`;
+  return `
+    <div class="emp-card" style="animation-delay:${idx * 0.05}s">
+      <div class="emp-card-photo-wrap">
+        <img class="emp-card-photo" src="${photoSrc}" alt="${emp.name}" onclick="navigate('employee-detail',{id:${emp.id}})" onerror="this.src='https://picsum.photos/seed/fallback${emp.id}/200/200'">
+        <button class="emp-card-menu-btn" onclick="event.stopPropagation();toggleDropdown('dropdown-${emp.id}')" aria-label="Employee options">
+          <i class="fas fa-ellipsis-v"></i>
+        </button>
+        <div class="dropdown-menu" id="dropdown-${emp.id}">
+          <div class="dropdown-item" onclick="closeDropdowns();navigate('add-shift',{empId:${emp.id}})">
+            <i class="fas fa-clock"></i> Add Shift
+          </div>
+          <div class="dropdown-item" onclick="closeDropdowns();navigate('add-advance',{empId:${emp.id}})">
+            <i class="fas fa-money-bill-wave"></i> Add Advance
+          </div>
+          <div class="dropdown-item" onclick="closeDropdowns();navigate('employee-detail',{id:${emp.id}})">
+            <i class="fas fa-eye"></i> View Details
+          </div>
+          <div class="dropdown-item danger" onclick="closeDropdowns();confirmDeleteEmployee(${emp.id})">
+            <i class="fas fa-trash-alt"></i> Delete
           </div>
         </div>
-      </td>
-      <td style="font-size:13px;">${emp.department}</td>
-      <td style="font-size:13px;">${emp.role}</td>
-      <td style="font-size:13px;font-weight:600;">$${emp.rate.toFixed(2)}</td>
-      <td>${getStatusBadge(emp.status)}</td>
-      <td>
-        <div class="flex gap-1" onclick="event.stopPropagation();">
-          <button class="btn-icon" title="Edit" onclick="editEmployee('${emp.id}')"><i class="fa-solid fa-pen" style="font-size:11px;"></i></button>
-          <button class="btn-icon" title="Delete" style="color:var(--danger);" onclick="confirmDelete('employee','${emp.id}')"><i class="fa-solid fa-trash" style="font-size:11px;"></i></button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
+      </div>
+      <div class="emp-card-name" onclick="navigate('employee-detail',{id:${emp.id}})">${emp.name}</div>
+      <div class="emp-card-id">${emp.empId}</div>
+      <div class="emp-card-rate">${formatCurrency(emp.rate)} / shift</div>
+    </div>
+  `;
 }
 
-function openAddEmployee() {
-  document.getElementById('empModalTitle').textContent = 'Add New Employee';
-  document.getElementById('empSubmitBtn').textContent = 'Add Employee';
-  document.getElementById('empForm').reset();
-  document.getElementById('empEditId').value = '';
-  document.getElementById('photoPreview').style.display = 'none';
-  document.getElementById('photoIcon').style.display = '';
-  document.getElementById('photoText').style.display = '';
-  openModal('addEmpModal');
-}
-
-function editEmployee(id) {
-  const emp = getEmp(id);
-  if (!emp) return;
-  document.getElementById('empModalTitle').textContent = 'Edit Employee';
-  document.getElementById('empSubmitBtn').textContent = 'Save Changes';
-  document.getElementById('empEditId').value = id;
-  document.getElementById('empFirstName').value = emp.firstName;
-  document.getElementById('empLastName').value = emp.lastName;
-  document.getElementById('empEmail').value = emp.email;
-  document.getElementById('empPhone').value = emp.phone || '';
-  document.getElementById('empDept').value = emp.department;
-  document.getElementById('empRole').value = emp.role;
-  document.getElementById('empRate').value = emp.rate;
-  document.getElementById('empStatus').value = emp.status;
-  document.getElementById('empBio').value = emp.bio || '';
-
-  if (emp.photo) {
-    document.getElementById('photoPreview').src = emp.photo;
-    document.getElementById('photoPreview').style.display = 'block';
-    document.getElementById('photoIcon').style.display = 'none';
-    document.getElementById('photoText').style.display = 'none';
+function filterHomeEmployees(query) {
+  const grid = document.getElementById('employee-grid');
+  const filtered = searchEmployees(query);
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <i class="fas fa-search"></i>
+        <h3>No results found</h3>
+        <p>Try a different search term</p>
+      </div>
+    `;
   } else {
-    document.getElementById('photoPreview').style.display = 'none';
-    document.getElementById('photoIcon').style.display = '';
-    document.getElementById('photoText').style.display = '';
+    grid.innerHTML = filtered.map((emp, idx) => renderEmployeeCard(emp, idx)).join('');
   }
-  openModal('addEmpModal');
 }
 
-let tempPhoto = '';
-function previewPhoto(e) {
-  const file = e.target.files[0];
+function toggleDropdown(id) {
+  const el = document.getElementById(id);
+  const wasOpen = el.classList.contains('show');
+  closeDropdowns();
+  if (!wasOpen) el.classList.add('show');
+}
+
+function closeDropdowns() {
+  document.querySelectorAll('.dropdown-menu.show').forEach(m => m.classList.remove('show'));
+}
+
+// 点击页面其他地方关闭下拉
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.emp-card-menu-btn') && !e.target.closest('.dropdown-menu')) {
+    closeDropdowns();
+  }
+});
+
+function confirmDeleteEmployee(id) {
+  const emp = getEmployee(id);
+  if (!emp) return;
+  showConfirm('Delete Employee?', `Are you sure you want to delete ${emp.name} and all their data? This cannot be undone.`, () => {
+    deleteEmployee(id);
+    showToast(`${emp.name} has been deleted`, 'success');
+    renderHomePage();
+  });
+}
+
+/* ========================================
+   添加员工页面
+======================================== */
+function renderAddEmployeePage(editId) {
+  const isEdit = !!editId;
+  const emp = isEdit ? getEmployee(editId) : null;
+
+  const html = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">${isEdit ? 'Edit Employee' : 'Add Employee'}</h1>
+        <p class="page-subtitle">${isEdit ? 'Update employee information' : 'Register a new team member'}</p>
+      </div>
+    </div>
+    <div class="card" style="max-width:500px;">
+      <form id="employee-form" onsubmit="handleEmployeeSubmit(event, ${editId || 'null'})">
+        <div class="photo-upload ${emp && emp.photo ? 'has-photo' : ''}" id="photo-upload" onclick="document.getElementById('photo-input').click()">
+          ${emp && emp.photo ? `<img src="${emp.photo}" alt="Photo" id="photo-preview">` : ''}
+          <i class="fas fa-camera"></i>
+          <span>Upload Photo</span>
+        </div>
+        <input type="file" id="photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" class="form-input" id="emp-name" placeholder="John Doe" required value="${emp ? emp.name : ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Employee ID</label>
+            <input type="text" class="form-input" id="emp-id" placeholder="EMP-001" required value="${emp ? emp.empId : ''}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-input" id="emp-phone" placeholder="+1 234 567 890" value="${emp ? emp.phone || '' : ''}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Shift Rate</label>
+            <input type="number" class="form-input" id="emp-rate" placeholder="500" min="0" step="0.01" required value="${emp ? emp.rate : ''}">
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">
+          <i class="fas fa-${isEdit ? 'save' : 'plus'}"></i>
+          ${isEdit ? 'Update Employee' : 'Add Employee'}
+        </button>
+      </form>
+    </div>
+  `;
+  document.getElementById('page-add-employee').innerHTML = html;
+}
+
+let tempPhotoData = null;
+
+function handlePhotoUpload(input) {
+  const file = input.files[0];
   if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('Image must be under 2MB', 'error');
+    return;
+  }
   const reader = new FileReader();
-  reader.onload = function(ev) {
-    tempPhoto = ev.target.result;
-    document.getElementById('photoPreview').src = tempPhoto;
-    document.getElementById('photoPreview').style.display = 'block';
-    document.getElementById('photoIcon').style.display = 'none';
-    document.getElementById('photoText').style.display = 'none';
+  reader.onload = (e) => {
+    tempPhotoData = e.target.result;
+    const wrap = document.getElementById('photo-upload');
+    wrap.classList.add('has-photo');
+    let img = document.getElementById('photo-preview');
+    if (!img) {
+      img = document.createElement('img');
+      img.id = 'photo-preview';
+      img.alt = 'Photo';
+      wrap.prepend(img);
+    }
+    img.src = tempPhotoData;
   };
   reader.readAsDataURL(file);
 }
 
-function saveEmployee(e) {
+function handleEmployeeSubmit(e, editId) {
   e.preventDefault();
-  const emps = getData('employees');
-  const editId = document.getElementById('empEditId').value;
+  const name = document.getElementById('emp-name').value.trim();
+  const empId = document.getElementById('emp-id').value.trim();
+  const phone = document.getElementById('emp-phone').value.trim();
+  const rate = parseFloat(document.getElementById('emp-rate').value);
 
-  const data = {
-    firstName: document.getElementById('empFirstName').value.trim(),
-    lastName: document.getElementById('empLastName').value.trim(),
-    email: document.getElementById('empEmail').value.trim(),
-    phone: document.getElementById('empPhone').value.trim(),
-    department: document.getElementById('empDept').value,
-    role: document.getElementById('empRole').value.trim(),
-    rate: parseFloat(document.getElementById('empRate').value),
-    status: document.getElementById('empStatus').value,
-    bio: document.getElementById('empBio').value.trim(),
-  };
-
-  if (editId) {
-    const idx = emps.findIndex(e => e.id === editId);
-    if (idx !== -1) {
-      emps[idx] = { ...emps[idx], ...data };
-      if (tempPhoto) emps[idx].photo = tempPhoto;
-      showToast('Employee updated successfully');
-    }
-  } else {
-    emps.push({
-      id: genId(),
-      ...data,
-      photo: tempPhoto || '',
-      createdAt: Date.now()
-    });
-    showToast('Employee added successfully');
+  if (!name || !empId || isNaN(rate)) {
+    showToast('Please fill all required fields', 'error');
+    return;
   }
 
-  setData('employees', emps);
-  tempPhoto = '';
-  closeModal('addEmpModal');
-  switchPage(document.querySelector('.nav-item.active')?.dataset.page || 'dashboard');
+  // 检查ID唯一性
+  const existing = appData.employees.find(em => em.empId === empId && em.id !== editId);
+  if (existing) {
+    showToast('Employee ID already exists', 'error');
+    return;
+  }
+
+  if (editId) {
+    const emp = getEmployee(editId);
+    if (emp) {
+      emp.name = name;
+      emp.empId = empId;
+      emp.phone = phone;
+      emp.rate = rate;
+      if (tempPhotoData) emp.photo = tempPhotoData;
+      saveData(appData);
+      showToast(`${name} updated successfully`, 'success');
+    }
+  } else {
+    const newEmp = { name, empId, phone, rate, photo: tempPhotoData || null, shifts: [], advances: [] };
+    addEmployee(newEmp);
+    showToast(`${name} added successfully`, 'success');
+  }
+
+  tempPhotoData = null;
+  navigate('home');
 }
 
-// ==================== EMPLOYEE DETAIL PANEL ====================
-function openDetail(id) {
-  const emp = getEmp(id);
-  if (!emp) return;
+/* ========================================
+   添加班次页面
+======================================== */
+function renderAddShiftPage(params) {
+  const preselectedId = params ? params.empId : null;
+  let optionsHtml = '<option value="">Select employee...</option>';
+  appData.employees.forEach(emp => {
+    const sel = emp.id === preselectedId ? 'selected' : '';
+    optionsHtml += `<option value="${emp.id}" ${sel}>${emp.name} (${emp.empId})</option>`;
+  });
 
-  const shifts = getData('shifts').filter(s => s.employeeId === id);
-  const payments = getData('payments').filter(p => p.employeeId === id);
-  const notes = getData('notes').filter(n => n.employeeId === id).sort((a, b) => b.createdAt - a.createdAt);
-  const thisMonth = new Date().toISOString().slice(0, 7);
-
-  const totalHours = shifts.filter(s => s.date.startsWith(thisMonth)).reduce((sum, s) => sum + calcHours(s.start, s.end), 0);
-  const totalEarned = payments.filter(p => p.period === thisMonth).reduce((sum, p) => sum + (p.grossPay || 0), 0);
-
-  document.getElementById('detailContent').innerHTML = `
-    <div class="text-center mb-6">
-      <img src="${emp.photo || defaultPhoto(emp.firstName)}" class="avatar-lg mx-auto mb-3" alt="${emp.firstName}" onerror="this.src='${defaultPhoto(emp.firstName)}'">
-      <h4 class="font-display font-bold text-xl">${emp.firstName} ${emp.lastName}</h4>
-      <p style="color:var(--fg-muted);font-size:13px;">${emp.role} · ${emp.department}</p>
-      <div class="flex justify-center mt-2">${getStatusBadge(emp.status)}</div>
-    </div>
-
-    ${emp.bio ? `<div class="note-card mb-5"><p style="font-size:13px;color:var(--fg-muted);line-height:1.6;">${emp.bio}</p></div>` : ''}
-
-    <div class="grid grid-cols-2 gap-3 mb-5">
-      <div class="card p-3 text-center">
-        <p style="font-size:11px;color:var(--fg-muted);margin-bottom:2px;">This Month</p>
-        <p class="font-display font-bold">${totalHours.toFixed(1)}h</p>
-        <p style="font-size:10px;color:var(--fg-muted);">Hours Worked</p>
-      </div>
-      <div class="card p-3 text-center">
-        <p style="font-size:11px;color:var(--fg-muted);margin-bottom:2px;">This Month</p>
-        <p class="font-display font-bold">$${totalEarned.toLocaleString()}</p>
-        <p style="font-size:10px;color:var(--fg-muted);">Earned</p>
+  const html = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Add Shift</h1>
+        <p class="page-subtitle">Record a new work shift</p>
       </div>
     </div>
-
-    <div class="mb-5">
-      <p style="font-size:12px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Contact</p>
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2" style="font-size:13px;"><i class="fa-solid fa-envelope" style="color:var(--fg-muted);width:16px;"></i>${emp.email}</div>
-        <div class="flex items-center gap-2" style="font-size:13px;"><i class="fa-solid fa-phone" style="color:var(--fg-muted);width:16px;"></i>${emp.phone || 'Not provided'}</div>
-        <div class="flex items-center gap-2" style="font-size:13px;"><i class="fa-solid fa-dollar-sign" style="color:var(--fg-muted);width:16px;"></i>$${emp.rate.toFixed(2)}/hr</div>
-      </div>
-    </div>
-
-    <div class="mb-5">
-      <div class="flex items-center justify-between mb-3">
-        <p style="font-size:12px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;">Recent Notes (${notes.length})</p>
-      </div>
-      ${notes.length === 0 ? '<p style="font-size:13px;color:var(--fg-muted);">No notes for this employee.</p>' :
-        notes.slice(0, 3).map(n => `
-          <div class="note-card mb-2">
-            <div class="flex items-center gap-2 mb-1">
-              <div class="pulse-dot" style="background:${getPriorityDot(n.priority)};"></div>
-              <span style="font-size:11px;font-weight:600;color:${getCatColor(n.category)};">${n.category}</span>
-              <span style="font-size:10px;color:var(--fg-muted);margin-left:auto;">${new Date(n.createdAt).toLocaleDateString()}</span>
-            </div>
-            <p style="font-size:12px;color:var(--fg-muted);line-height:1.5;">${n.content}</p>
+    <div class="card" style="max-width:500px;">
+      <form id="shift-form" onsubmit="handleShiftSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Employee</label>
+          <select class="form-select" id="shift-emp" required onchange="onShiftEmpChange()">
+            ${optionsHtml}
+          </select>
+        </div>
+        <div id="shift-rate-display" style="display:none;margin-bottom:18px;">
+          <div style="background:var(--accent-dim);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-tag" style="color:var(--accent);font-size:13px;"></i>
+            <span style="font-size:13px;color:var(--accent);font-weight:600;">Rate: <span id="shift-rate-val"></span> per shift</span>
           </div>
-        `).join('')}
-    </div>
-
-    <div class="mb-5">
-      <p style="font-size:12px;font-weight:600;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Recent Shifts</p>
-      ${shifts.length === 0 ? '<p style="font-size:13px;color:var(--fg-muted);">No shifts assigned.</p>' :
-        shifts.slice(0, 4).map(s => `
-          <div class="flex items-center gap-3 py-2" style="border-bottom:1px solid var(--border);">
-            <div class="shift-bar" style="background:${getShiftColor(s.type)};"></div>
-            <div class="flex-1">
-              <p style="font-size:12px;">${fmtDate(s.date)}</p>
-              <p style="font-size:11px;color:var(--fg-muted);">${s.type} · ${s.start}–${s.end}</p>
-            </div>
-            ${getStatusBadge(s.status)}
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="shift-date" required value="${todayStr()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Place / Location</label>
+          <input type="text" class="form-input" id="shift-place" placeholder="e.g. Downtown Branch" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Customer Name</label>
+          <input type="text" class="form-input" id="shift-customer" placeholder="e.g. ABC Corporation" required>
+        </div>
+        <div id="shift-next-info" style="display:none;margin-bottom:18px;">
+          <div style="background:var(--info-dim);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-info-circle" style="color:var(--info);font-size:13px;"></i>
+            <span style="font-size:13px;color:var(--info);font-weight:500;">This will be Shift <strong id="shift-next-roman"></strong> for this date</span>
           </div>
-        `).join('')}
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">
+          <i class="fas fa-plus"></i> Add Shift
+        </button>
+      </form>
+    </div>
+  `;
+  document.getElementById('page-add-shift').innerHTML = html;
+  if (preselectedId) onShiftEmpChange();
+}
+
+function onShiftEmpChange() {
+  const empId = parseInt(document.getElementById('shift-emp').value);
+  const emp = getEmployee(empId);
+  const rateDisplay = document.getElementById('shift-rate-display');
+  const nextInfo = document.getElementById('shift-next-info');
+
+  if (emp) {
+    rateDisplay.style.display = 'block';
+    document.getElementById('shift-rate-val').textContent = formatCurrency(emp.rate);
+    // 预览下一个班次号
+    updateShiftPreview(emp);
+    nextInfo.style.display = 'block';
+  } else {
+    rateDisplay.style.display = 'none';
+    nextInfo.style.display = 'none';
+  }
+}
+
+function updateShiftPreview(emp) {
+  const date = document.getElementById('shift-date').value;
+  if (emp && date) {
+    const count = emp.shifts.filter(s => s.date === date).length;
+    const nextRoman = toRoman(count + 1);
+    document.getElementById('shift-next-roman').textContent = nextRoman;
+  }
+}
+
+// 监听日期变化更新预览
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'shift-date') {
+    const empId = parseInt(document.getElementById('shift-emp')?.value);
+    const emp = getEmployee(empId);
+    if (emp) updateShiftPreview(emp);
+  }
+});
+
+function handleShiftSubmit(e) {
+  e.preventDefault();
+  const empId = parseInt(document.getElementById('shift-emp').value);
+  const date = document.getElementById('shift-date').value;
+  const place = document.getElementById('shift-place').value.trim();
+  const customer = document.getElementById('shift-customer').value.trim();
+
+  if (!empId || !date || !place || !customer) {
+    showToast('Please fill all fields', 'error');
+    return;
+  }
+
+  const shift = addShift(empId, { date, place, customer });
+  if (shift) {
+    const emp = getEmployee(empId);
+    showToast(`Shift ${shift.shiftRoman} added for ${emp.name}`, 'success');
+    navigate('home');
+  }
+}
+
+/* ========================================
+   添加预付款页面
+======================================== */
+function renderAddAdvancePage(params) {
+  const preselectedId = params ? params.empId : null;
+  let optionsHtml = '<option value="">Select employee...</option>';
+  appData.employees.forEach(emp => {
+    const sel = emp.id === preselectedId ? 'selected' : '';
+    optionsHtml += `<option value="${emp.id}" ${sel}>${emp.name} (${emp.empId})</option>`;
+  });
+
+  const html = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Add Advance Payment</h1>
+        <p class="page-subtitle">Record an advance payment to employee</p>
+      </div>
+    </div>
+    <div class="card" style="max-width:500px;">
+      <form id="advance-form" onsubmit="handleAdvanceSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Employee</label>
+          <select class="form-select" id="advance-emp" required>
+            ${optionsHtml}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-input" id="advance-date" required value="${todayStr()}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount</label>
+            <input type="number" class="form-input" id="advance-amount" placeholder="0.00" min="0" step="0.01" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description / Note</label>
+          <textarea class="form-textarea" id="advance-note" placeholder="Reason for advance payment..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" style="margin-top:8px;">
+          <i class="fas fa-plus"></i> Add Advance Payment
+        </button>
+      </form>
+    </div>
+  `;
+  document.getElementById('page-add-advance').innerHTML = html;
+}
+
+function handleAdvanceSubmit(e) {
+  e.preventDefault();
+  const empId = parseInt(document.getElementById('advance-emp').value);
+  const date = document.getElementById('advance-date').value;
+  const amount = parseFloat(document.getElementById('advance-amount').value);
+  const note = document.getElementById('advance-note').value.trim();
+
+  if (!empId || !date || isNaN(amount) || amount <= 0) {
+    showToast('Please fill all required fields correctly', 'error');
+    return;
+  }
+
+  const advance = addAdvance(empId, { date, amount, note });
+  if (advance) {
+    const emp = getEmployee(empId);
+    showToast(`Advance of ${formatCurrency(amount)} recorded for ${emp.name}`, 'success');
+    navigate('home');
+  }
+}
+
+/* ========================================
+   Excel上传页面
+======================================== */
+function renderExcelUploadPage() {
+  const html = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Excel Upload</h1>
+        <p class="page-subtitle">Import shifts and advances from spreadsheet</p>
+      </div>
+    </div>
+    <div class="card" style="max-width:600px;">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('excel-input').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleExcelDrop(event)">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <h3>Drop Excel file here</h3>
+        <p>or click to browse &mdash; .xlsx, .xls, .csv</p>
+      </div>
+      <input type="file" id="excel-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelFile(this)">
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--fg-secondary);margin-bottom:10px;">
+          <i class="fas fa-info-circle" style="color:var(--info);margin-right:6px;"></i>Expected Columns
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="background:var(--accent-dim);color:var(--accent);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;">Employee ID</span>
+          <span style="background:var(--accent-dim);color:var(--accent);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;">Date</span>
+          <span style="background:var(--accent-dim);color:var(--accent);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;">Place</span>
+          <span style="background:var(--accent-dim);color:var(--accent);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;">Customer</span>
+          <span style="background:var(--info-dim);color:var(--info);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;">Advance Amount (optional)</span>
+          <span style="background:var(--info-dim);color:var(--info);padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;">Advance Note (optional)</span>
+        </div>
+      </div>
+
+      <div id="excel-preview" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <span style="font-size:14px;font-weight:700;">Preview (<span id="preview-count">0</span> rows)</span>
+          <button class="btn btn-primary btn-sm" onclick="confirmExcelImport()">
+            <i class="fas fa-check"></i> Confirm Import
+          </button>
+        </div>
+        <div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);">
+          <table class="preview-table" id="preview-table"></table>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('page-excel-upload').innerHTML = html;
+}
+
+let pendingExcelData = [];
+
+function handleExcelDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processExcelFile(file);
+}
+
+function handleExcelFile(input) {
+  const file = input.files[0];
+  if (file) processExcelFile(file);
+}
+
+function processExcelFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      if (json.length === 0) {
+        showToast('No data found in the file', 'error');
+        return;
+      }
+
+      pendingExcelData = json;
+      renderExcelPreview(json);
+      showToast(`Parsed ${json.length} rows successfully`, 'info');
+    } catch(err) {
+      console.error(err);
+      showToast('Failed to read Excel file. Check format.', 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderExcelPreview(data) {
+  const previewEl = document.getElementById('excel-preview');
+  const tableEl = document.getElementById('preview-table');
+  const countEl = document.getElementById('preview-count');
+  previewEl.style.display = 'block';
+  countEl.textContent = data.length;
+
+  // 列名映射（灵活匹配）
+  const colMap = mapColumns(Object.keys(data[0]));
+  const displayCols = ['Employee', 'Date', 'Place', 'Customer', 'Advance', 'Note'];
+
+  let html = '<thead><tr>';
+  displayCols.forEach(c => html += `<th>${c}</th>`);
+  html += '<th>Status</th></tr></thead><tbody>';
+
+  data.forEach(row => {
+    const empVal = row[colMap.empId] || row[colMap.empName] || '';
+    const dateVal = row[colMap.date] || '';
+    const placeVal = row[colMap.place] || '';
+    const custVal = row[colMap.customer] || '';
+    const advVal = row[colMap.advance] || '';
+    const noteVal = row[colMap.advanceNote] || '';
+
+    // 检查能否匹配到员工
+    let matched = false;
+    if (empVal) {
+      const q = String(empVal).trim().toLowerCase();
+      matched = appData.employees.some(em =>
+        em.empId.toLowerCase() === q || em.name.toLowerCase() === q
+      );
+    }
+
+    // 格式化日期
+    let dateStr = '';
+    if (dateVal instanceof Date) {
+      dateStr = formatDate(dateVal.toISOString().split('T')[0]);
+    } else if (dateVal) {
+      dateStr = String(dateVal);
+    }
+
+    html += `<tr>
+      <td>${empVal}</td>
+      <td>${dateStr}</td>
+      <td>${placeVal}</td>
+      <td>${custVal}</td>
+      <td>${advVal ? formatCurrency(advVal) : '-'}</td>
+      <td>${noteVal || '-'}</td>
+      <td><span style="color:${matched ? 'var(--success)' : 'var(--danger)'};font-weight:600;font-size:11px;">
+        ${matched ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-times-circle"></i>'}
+      </span></td>
+    </tr>`;
+  });
+
+  html += '</tbody>';
+  tableEl.innerHTML = html;
+}
+
+function mapColumns(headers) {
+  const map = { empId: '', empName: '', date: '', place: '', customer: '', advance: '', advanceNote: '' };
+  headers.forEach(h => {
+    const hl = h.toLowerCase().trim();
+    if (/emp.*id|id/.test(hl) && !map.empId) map.empId = h;
+    if (/name|employee/i.test(hl) && !map.empName) map.empName = h;
+    if (/date/.test(hl)) map.date = h;
+    if (/place|location|site/i.test(hl)) map.place = h;
+    if (/cust|client/i.test(hl)) map.customer = h;
+    if (/advance|adv|prepay/i.test(hl) && /amount|amt|money|pay|value/i.test(hl)) map.advance = h;
+    if (/advance|adv|prepay/i.test(hl) && /note|desc|remark|reason/i.test(hl)) map.advanceNote = h;
+    // 如果advance列还没匹配到，且列名包含advance
+    if (!map.advance && /advance|adv/i.test(hl) && !/note|desc|remark/i.test(hl)) map.advance = h;
+  });
+  return map;
+}
+
+function confirmExcelImport() {
+  if (pendingExcelData.length === 0) return;
+  const colMap = mapColumns(Object.keys(pendingExcelData[0]));
+  let imported = 0, skipped = 0;
+
+  pendingExcelData.forEach(row => {
+    const empVal = row[colMap.empId] || row[colMap.empName] || '';
+    if (!empVal) { skipped++; return; }
+
+    const q = String(empVal).trim().toLowerCase();
+    const emp = appData.employees.find(em =>
+      em.empId.toLowerCase() === q || em.name.toLowerCase() === q
+    );
+    if (!emp) { skipped++; return; }
+
+    // 处理日期
+    let dateStr = '';
+    const dateVal = row[colMap.date];
+    if (dateVal instanceof Date) {
+      dateStr = dateVal.toISOString().split('T')[0];
+    } else if (dateVal) {
+      // 尝试解析各种日期格式
+      const parsed = new Date(dateVal);
+      if (!isNaN(parsed.getTime())) {
+        dateStr = parsed.toISOString().split('T')[0];
+      } else {
+        // 尝试 DD/MM/YYYY
+        const parts = String(dateVal).split(/[\/\-\.]/);
+        if (parts.length === 3) {
+          dateStr = `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+        }
+      }
+    }
+
+    // 添加班次（如果有日期和地点）
+    const place = String(row[colMap.place] || '').trim();
+    const customer = String(row[colMap.customer] || '').trim();
+    if (dateStr && place) {
+      addShift(emp.id, { date: dateStr, place, customer });
+      imported++;
+    }
+
+    // 添加预付款（如果有金额）
+    const advAmount = parseFloat(row[colMap.advance]);
+    if (!isNaN(advAmount) && advAmount > 0) {
+      const advNote = String(row[colMap.advanceNote] || 'From Excel import').trim();
+      addAdvance(emp.id, { date: dateStr || todayStr(), amount: advAmount, note: advNote });
+    }
+  });
+
+  saveData(appData);
+  pendingExcelData = [];
+  showToast(`Imported ${imported} rows${skipped > 0 ? `, ${skipped} skipped` : ''}`, 'success');
+  navigate('home');
+}
+
+/* ========================================
+   员工余额页面
+======================================== */
+function renderBalancePage() {
+  const totalPayment = appData.employees.reduce((s, e) => s + e.shifts.length * parseFloat(e.rate || 0), 0);
+  const totalAdvance = appData.employees.reduce((s, e) => s + e.advances.reduce((a, adv) => a + parseFloat(adv.amount || 0), 0), 0);
+  const remaining = totalPayment - totalAdvance;
+
+  let html = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Employee Balance</h1>
+        <p class="page-subtitle">Payment overview for all employees</p>
+      </div>
+    </div>
+    <div class="balance-card">
+      <div class="balance-label">Total Remaining Balance</div>
+      <div class="balance-amount">${formatCurrency(remaining)}</div>
+      <div style="display:flex;justify-content:center;gap:24px;margin-top:12px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--success);">${formatCurrency(totalPayment)}</div>
+          <div style="font-size:11px;color:var(--muted);">Total Earned</div>
+        </div>
+        <div style="width:1px;background:var(--border);"></div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--danger);">${formatCurrency(totalAdvance)}</div>
+          <div style="font-size:11px;color:var(--muted);">Total Advances</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-label">Per Employee Breakdown</div>
+  `;
+
+  if (appData.employees.length === 0) {
+    html += `<div class="empty-state"><i class="fas fa-wallet"></i><h3>No employees to show</h3><p>Add employees to see their balance</p></div>`;
+  } else {
+    appData.employees.forEach((emp, idx) => {
+      const totalShifts = emp.shifts.length;
+      const earned = totalShifts * parseFloat(emp.rate || 0);
+      const advance = emp.advances.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
+      const bal = earned - advance;
+      const photoSrc = emp.photo || `https://picsum.photos/seed/sf${emp.id}/200/200`;
+
+      html += `
+        <div class="balance-emp-card" style="animation-delay:${idx * 0.05}s" onclick="navigate('employee-detail',{id:${emp.id}})">
+          <img class="balance-emp-photo" src="${photoSrc}" alt="${emp.name}" onerror="this.src='https://picsum.photos/seed/fallback${emp.id}/200/200'">
+          <div class="balance-emp-info">
+            <div class="balance-emp-name">${emp.name}</div>
+            <div class="balance-emp-meta">${totalShifts} shifts &middot; ${formatCurrency(emp.rate)}/shift &middot; Advance: ${formatCurrency(advance)}</div>
+          </div>
+          <div class="balance-emp-right">
+            <div class="balance-emp-amount ${bal >= 0 ? 'positive' : 'negative'}">${bal >= 0 ? '' : '-'}${formatCurrency(Math.abs(bal))}</div>
+            <div class="balance-emp-label">${bal >= 0 ? 'To Pay' : 'Overpaid'}</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  document.getElementById('page-balance').innerHTML = html;
+}
+
+/* ========================================
+   员工详情页面
+======================================== */
+let detailTab = 'shifts';
+
+function renderEmployeeDetailPage(params) {
+  if (!params || !params.id) { navigate('home'); return; }
+  const emp = getEmployee(params.id);
+  if (!emp) { navigate('home'); return; }
+  currentDetailId = params.id;
+
+  const totalShifts = emp.shifts.length;
+  const earned = totalShifts * parseFloat(emp.rate || 0);
+  const advance = emp.advances.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
+  const balance = earned - advance;
+  const photoSrc = emp.photo || `https://picsum.photos/seed/sf${emp.id}/200/200`;
+
+  let html = `
+    <div style="padding-top:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="navigate('home')" style="margin-bottom:16px;">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+    </div>
+    <div class="profile-header">
+      <img class="profile-photo" src="${photoSrc}" alt="${emp.name}" onerror="this.src='https://picsum.photos/seed/fallback${emp.id}/200/200'">
+      <div class="profile-info">
+        <div class="profile-name">${emp.name}</div>
+        <div class="profile-meta">${emp.empId} &middot; ${emp.phone || 'No phone'}</div>
+        <div class="profile-badge">${formatCurrency(emp.rate)} / shift</div>
+      </div>
+      <button class="nav-btn" onclick="navigate('add-employee', ${emp.id})" title="Edit" aria-label="Edit employee">
+        <i class="fas fa-pen"></i>
+      </button>
     </div>
 
-    <div class="flex gap-2">
-      <button class="btn-primary btn-sm flex-1" onclick="closeDetail();editEmployee('${emp.id}')"><i class="fa-solid fa-pen"></i> Edit</button>
-      <button class="btn-secondary btn-sm flex-1" onclick="closeDetail();confirmDelete('employee','${emp.id}')"><i class="fa-solid fa-trash"></i> Remove</button>
+    <div class="profile-stats">
+      <div class="profile-stat">
+        <div class="profile-stat-val">${totalShifts}</div>
+        <div class="profile-stat-label">Shifts</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" style="color:var(--success);">${formatCurrency(earned)}</div>
+        <div class="profile-stat-label">Earned</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-stat-val" style="color:${balance >= 0 ? 'var(--accent)' : 'var(--danger)'};">${formatCurrency(Math.abs(balance))}</div>
+        <div class="profile-stat-label">${balance >= 0 ? 'Balance' : 'Overpaid'}</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab ${detailTab === 'shifts' ? 'active' : ''}" onclick="detailTab='shifts';renderEmployeeDetailPage({id:${emp.id}})">Shifts (${totalShifts})</div>
+      <div class="tab ${detailTab === 'advances' ? 'active' : ''}" onclick="detailTab='advances';renderEmployeeDetailPage({id:${emp.id}})">Advances (${emp.advances.length})</div>
     </div>
   `;
 
-  document.getElementById('detailPanel').classList.add('open');
-  document.getElementById('detailOverlay').style.display = 'block';
-}
-
-function closeDetail() {
-  document.getElementById('detailPanel').classList.remove('open');
-  document.getElementById('detailOverlay').style.display = 'none';
-}
-
-// ==================== SHIFTS ====================
-function populateEmpSelect(selectId, includeAll) {
-  const emps = getData('employees').filter(e => e.status === 'Active');
-  const sel = document.getElementById(selectId);
-  const current = sel.value;
-  sel.innerHTML = includeAll ? '<option value="">All Employees</option>' : '';
-  emps.forEach(e => {
-    sel.innerHTML += `<option value="${e.id}">${e.firstName} ${e.lastName}</option>`;
-  });
-  sel.value = current;
-}
-
-function openAddShift() {
-  populateEmpSelect('shiftEmp', false);
-  document.getElementById('shiftEditId').value = '';
-  document.getElementById('shiftDate').value = new Date().toISOString().split('T')[0];
-  document.querySelector('#addShiftModal form').reset();
-  document.getElementById('shiftDate').value = new Date().toISOString().split('T')[0];
-  openModal('addShiftModal');
-}
-
-function saveShift(e) {
-  e.preventDefault();
-  const shifts = getData('shifts');
-  const editId = document.getElementById('shiftEditId').value;
-  const start = document.getElementById('shiftStart').value;
-  const end = document.getElementById('shiftEnd').value;
-
-  const data = {
-    employeeId: document.getElementById('shiftEmp').value,
-    date: document.getElementById('shiftDate').value,
-    type: document.getElementById('shiftType').value,
-    start,
-    end,
-  };
-
-  if (editId) {
-    const idx = shifts.findIndex(s => s.id === editId);
-    if (idx !== -1) { shifts[idx] = { ...shifts[idx], ...data }; showToast('Shift updated'); }
+  if (detailTab === 'shifts') {
+    html += renderShiftHistory(emp);
   } else {
-    shifts.push({ id: genId(), ...data, status: 'Scheduled', createdAt: Date.now() });
-    showToast('Shift assigned successfully');
+    html += renderAdvanceHistory(emp);
   }
 
-  setData('shifts', shifts);
-  closeModal('addShiftModal');
-  renderShifts();
+  document.getElementById('page-employee-detail').innerHTML = html;
 }
 
-function renderShifts() {
-  const shifts = getData('shifts');
-  const dateF = document.getElementById('shiftDateFilter').value;
-  const typeF = document.getElementById('shiftTypeFilter').value;
-  const statusF = document.getElementById('shiftStatusFilter').value;
+function renderShiftHistory(emp) {
+  if (emp.shifts.length === 0) {
+    return `<div class="empty-state"><i class="fas fa-clock"></i><h3>No shifts recorded</h3><p>Add a shift to get started</p></div>`;
+  }
 
-  let filtered = shifts.filter(s => {
-    return (!dateF || s.date === dateF) && (!typeF || s.type === typeF) && (!statusF || s.status === statusF);
-  }).sort((a, b) => b.date.localeCompare(a.date));
-
-  // Auto-update statuses
-  const today = new Date().toISOString().split('T')[0];
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  let changed = false;
-  filtered.forEach(s => {
-    if (s.date === today && s.status === 'Scheduled') {
-      const [sh, sm] = s.start.split(':').map(Number);
-      if (sh * 60 + sm <= currentMinutes) {
-        s.status = 'Active';
-        const orig = shifts.find(x => x.id === s.id);
-        if (orig) orig.status = 'Active';
-        changed = true;
-      }
-    }
-    if (s.date === today && s.status === 'Active') {
-      const [sh, sm] = s.start.split(':').map(Number);
-      let endMin;
-      if (s.type === 'Night') {
-        // Night shifts end next day
-        endMin = 24 * 60; // treat end of day as completed for simplicity
-      } else {
-        const [eh, em] = s.end.split(':').map(Number);
-        endMin = eh * 60 + em;
-      }
-      if (currentMinutes >= endMin) {
-        s.status = 'Completed';
-        const orig = shifts.find(x => x.id === s.id);
-        if (orig) orig.status = 'Completed';
-        changed = true;
-      }
-    }
+  // 按日期分组
+  const grouped = {};
+  emp.shifts.forEach((s, idx) => {
+    if (!grouped[s.date]) grouped[s.date] = [];
+    grouped[s.date].push({ ...s, _index: idx });
   });
-  if (changed) setData('shifts', shifts);
 
-  const tbody = document.getElementById('shiftTableBody');
-  const empty = document.getElementById('shiftEmpty');
-
-  if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  tbody.innerHTML = filtered.map(s => {
-    const hours = calcHours(s.start, s.end);
-    const color = getShiftColor(s.type);
-    return `
-    <tr>
-      <td>
-        <div class="flex items-center gap-2">
-          <img src="${getEmpPhoto(s.employeeId) || defaultPhoto(getEmpName(s.employeeId))}" class="avatar" style="width:34px;height:34px;border-radius:8px;" onerror="this.src='${defaultPhoto(getEmpName(s.employeeId))}'">
-          <span style="font-size:13px;font-weight:500;">${getEmpName(s.employeeId)}</span>
-        </div>
-      </td>
-      <td style="font-size:13px;">${fmtDate(s.date)}</td>
-      <td><div class="flex items-center gap-2"><div class="shift-bar" style="background:${color};"></div><span style="font-size:13px;">${s.type}</span></div></td>
-      <td style="font-size:13px;">${s.start} – ${s.end}</td>
-      <td style="font-size:13px;font-weight:600;">${hours}h</td>
-      <td>${getStatusBadge(s.status)}</td>
-      <td>
-        <div class="flex gap-1">
-          <button class="btn-icon" title="${s.status === 'Scheduled' ? 'Start' : s.status === 'Active' ? 'Complete' : ''}" 
-            ${s.status === 'Completed' ? 'disabled style="opacity:0.3;pointer-events:none;"' : ''}
-            onclick="cycleShiftStatus('${s.id}')">
-            <i class="fa-solid ${s.status === 'Scheduled' ? 'fa-play' : s.status === 'Active' ? 'fa-check' : 'fa-lock'}" style="font-size:11px;"></i>
+  let html = '';
+  Object.keys(grouped).sort().reverse().forEach(date => {
+    html += `<div style="font-size:12px;font-weight:700;color:var(--muted);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.8px;">${formatDate(date)}</div>`;
+    grouped[date].forEach(s => {
+      html += `
+        <div class="list-item">
+          <div class="list-icon shift"><i class="fas fa-clock"></i></div>
+          <div class="list-content">
+            <div class="list-title">Shift ${s.shiftRoman} &mdash; ${s.place}</div>
+            <div class="list-sub"><i class="fas fa-user" style="margin-right:4px;"></i>${s.customer}</div>
+          </div>
+          <div class="list-amount positive">${formatCurrency(s.payment)}</div>
+          <button class="delete-btn" onclick="event.stopPropagation();confirmDeleteShift(${emp.id},${s._index})" title="Delete shift" aria-label="Delete shift">
+            <i class="fas fa-trash-alt"></i>
           </button>
-          <button class="btn-icon" title="Delete" style="color:var(--danger);" onclick="confirmDelete('shift','${s.id}')"><i class="fa-solid fa-trash" style="font-size:11px;"></i></button>
         </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function cycleShiftStatus(id) {
-  const shifts = getData('shifts');
-  const s = shifts.find(x => x.id === id);
-  if (!s) return;
-  if (s.status === 'Scheduled') { s.status = 'Active'; showToast('Shift started', 'info'); }
-  else if (s.status === 'Active') { s.status = 'Completed'; showToast('Shift completed', 'success'); }
-  setData('shifts', shifts);
-  renderShifts();
-}
-
-// ==================== PAYMENTS ====================
-function openAddPayment() {
-  populateEmpSelect('payEmp', false);
-  document.getElementById('payEditId').value = '';
-  document.querySelector('#addPayModal form').reset();
-  document.getElementById('payPeriod').value = new Date().toISOString().slice(0, 7);
-  openModal('addPayModal');
-}
-
-function savePayment(e) {
-  e.preventDefault();
-  const payments = getData('payments');
-  const empId = document.getElementById('payEmp').value;
-  const emp = getEmp(empId);
-  const hours = parseFloat(document.getElementById('payHours').value);
-  const ot = parseFloat(document.getElementById('payOvertime').value) || 0;
-  const bonus = parseFloat(document.getElementById('payBonus').value) || 0;
-  const rate = emp ? emp.rate : 0;
-  const grossPay = (hours * rate) + (ot * rate * 1.5) + bonus;
-
-  const data = {
-    employeeId: empId,
-    period: document.getElementById('payPeriod').value,
-    hours,
-    overtime: ot,
-    bonus,
-    grossPay: Math.round(grossPay * 100) / 100,
-    status: document.getElementById('payStatus').value,
-    createdAt: Date.now()
-  };
-
-  payments.push({ id: genId(), ...data });
-  setData('payments', payments);
-  showToast('Payment recorded successfully');
-  closeModal('addPayModal');
-  renderPayments();
-}
-
-function renderPayments() {
-  const payments = getData('payments');
-  const monthF = document.getElementById('payMonthFilter').value;
-  const statusF = document.getElementById('payStatusFilter').value;
-
-  if (!document.getElementById('payMonthFilter').value) {
-    document.getElementById('payMonthFilter').value = new Date().toISOString().slice(0, 7);
-  }
-
-  let filtered = payments.filter(p => {
-    return (!monthF || p.period === monthF) && (!statusF || p.status === statusF);
-  }).sort((a, b) => b.period.localeCompare(a.period));
-
-  // Stats
-  const allMonth = payments.filter(p => p.period === (monthF || new Date().toISOString().slice(0, 7)));
-  document.getElementById('payTotalPaid').textContent = '$' + allMonth.filter(p => p.status === 'Paid').reduce((s, p) => s + (p.grossPay || 0), 0).toLocaleString();
-  document.getElementById('payPending').textContent = '$' + allMonth.filter(p => p.status === 'Pending').reduce((s, p) => s + (p.grossPay || 0), 0).toLocaleString();
-  document.getElementById('payOvertime').textContent = allMonth.reduce((s, p) => s + (p.overtime || 0), 0) + 'h';
-
-  const tbody = document.getElementById('payTableBody');
-  const empty = document.getElementById('payEmpty');
-
-  if (filtered.length === 0) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  tbody.innerHTML = filtered.map(p => `
-    <tr>
-      <td>
-        <div class="flex items-center gap-2">
-          <img src="${getEmpPhoto(p.employeeId) || defaultPhoto(getEmpName(p.employeeId))}" class="avatar" style="width:34px;height:34px;border-radius:8px;" onerror="this.src='${defaultPhoto(getEmpName(p.employeeId))}'">
-          <span style="font-size:13px;font-weight:500;">${getEmpName(p.employeeId)}</span>
-        </div>
-      </td>
-      <td style="font-size:13px;">${fmtMonth(p.period)}</td>
-      <td style="font-size:13px;font-weight:600;">${p.hours}h</td>
-      <td style="font-size:13px;color:var(--danger);">${p.overtime > 0 ? p.overtime + 'h' : '—'}</td>
-      <td style="font-size:13px;font-weight:700;">$${(p.grossPay || 0).toLocaleString()}</td>
-      <td style="font-size:13px;color:var(--success);">${p.bonus > 0 ? '+$' + p.bonus : '—'}</td>
-      <td>${getStatusBadge(p.status)}</td>
-      <td>
-        <div class="flex gap-1">
-          ${p.status === 'Pending' ? `<button class="btn-icon" title="Mark Paid" onclick="markPaid('${p.id}')"><i class="fa-solid fa-check" style="font-size:11px;color:var(--success);"></i></button>` : ''}
-          <button class="btn-icon" title="Delete" style="color:var(--danger);" onclick="confirmDelete('payment','${p.id}')"><i class="fa-solid fa-trash" style="font-size:11px;"></i></button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function markPaid(id) {
-  const payments = getData('payments');
-  const p = payments.find(x => x.id === id);
-  if (p) { p.status = 'Paid'; setData('payments', payments); showToast('Marked as paid', 'success'); renderPayments(); }
-}
-
-// ==================== NOTES ====================
-function populateNoteFilters() {
-  populateEmpSelect('noteEmp', true);
-  populateEmpSelect('noteEmpFilter', true);
-}
-
-function openAddNote() {
-  populateEmpSelect('noteEmp', false);
-  document.getElementById('noteEditId').value = '';
-  document.querySelector('#addNoteModal form').reset();
-  openModal('addNoteModal');
-}
-
-function saveNote(e) {
-  e.preventDefault();
-  const notes = getData('notes');
-  notes.push({
-    id: genId(),
-    employeeId: document.getElementById('noteEmp').value,
-    category: document.getElementById('noteCategory').value,
-    priority: document.getElementById('notePriority').value,
-    content: document.getElementById('noteContent').value.trim(),
-    createdAt: Date.now()
+      `;
+    });
   });
-  setData('notes', notes);
-  showToast('Note saved successfully');
-  closeModal('addNoteModal');
-  renderNotes();
+  return html;
 }
 
-function renderNotes() {
-  const notes = getData('notes');
-  const empF = document.getElementById('noteEmpFilter').value;
-  const catF = document.getElementById('noteCategoryFilter').value;
-
-  let filtered = notes.filter(n => {
-    return (!empF || n.employeeId === empF) && (!catF || n.category === catF);
-  }).sort((a, b) => b.createdAt - a.createdAt);
-
-  const grid = document.getElementById('notesGrid');
-  const empty = document.getElementById('notesEmpty');
-
-  if (filtered.length === 0) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
-  empty.style.display = 'none';
-
-  grid.innerHTML = filtered.map(n => {
-    const catColor = getCatColor(n.category);
-    const priColor = getPriorityDot(n.priority);
-    const emp = getEmp(n.employeeId);
-    return `
-    <div class="note-card fade-up">
-      <div class="flex items-start justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <img src="${emp ? (emp.photo || defaultPhoto(emp.firstName)) : defaultPhoto('?')}" style="width:28px;height:28px;border-radius:7px;object-fit:cover;" onerror="this.src='${defaultPhoto(emp ? emp.firstName : '?')}'">
-          <span style="font-size:13px;font-weight:500;">${getEmpName(n.employeeId)}</span>
-        </div>
-        <button class="btn-icon" style="width:28px;height:28px;font-size:10px;" onclick="confirmDelete('note','${n.id}')"><i class="fa-solid fa-trash" style="color:var(--danger);"></i></button>
-      </div>
-      <div class="flex items-center gap-2 mb-2">
-        <span style="font-size:11px;font-weight:600;color:${catColor};background:${catColor}18;padding:2px 8px;border-radius:4px;">${n.category}</span>
-        <span class="flex items-center gap-1" style="font-size:10px;color:${priColor};"><span class="pulse-dot" style="background:${priColor};width:6px;height:6px;"></span>${n.priority}</span>
-        <span style="font-size:10px;color:var(--fg-muted);margin-left:auto;">${new Date(n.createdAt).toLocaleDateString()}</span>
-      </div>
-      <p style="font-size:13px;color:var(--fg);line-height:1.6;opacity:0.85;">${n.content}</p>
-    </div>`;
-  }).join('');
-}
-
-// ==================== DELETE ====================
-let deleteTarget = { type: '', id: '' };
-function confirmDelete(type, id) {
-  deleteTarget = { type, id };
-  const names = { employee: 'employee', shift: 'shift', payment: 'payment record', note: 'note' };
-  document.getElementById('confirmText').textContent = `Are you sure you want to delete this ${names[type]}? This action cannot be undone.`;
-  openModal('confirmModal');
-}
-
-document.getElementById('confirmDeleteBtn').onclick = function() {
-  const { type, id } = deleteTarget;
-  if (type === 'employee') {
-    let emps = getData('employees');
-    emps = emps.filter(e => e.id !== id);
-    setData('employees', emps);
-    // Also clean related data
-    setData('shifts', getData('shifts').filter(s => s.employeeId !== id));
-    setData('payments', getData('payments').filter(p => p.employeeId !== id));
-    setData('notes', getData('notes').filter(n => n.employeeId !== id));
-    closeDetail();
-    showToast('Employee removed', 'error');
-  } else if (type === 'shift') {
-    setData('shifts', getData('shifts').filter(s => s.id !== id));
-    showToast('Shift deleted', 'error');
-  } else if (type === 'payment') {
-    setData('payments', getData('payments').filter(p => p.id !== id));
-    showToast('Payment deleted', 'error');
-  } else if (type === 'note') {
-    setData('notes', getData('notes').filter(n => n.id !== id));
-    showToast('Note deleted', 'error');
+function renderAdvanceHistory(emp) {
+  if (emp.advances.length === 0) {
+    return `<div class="empty-state"><i class="fas fa-money-bill-wave"></i><h3>No advance payments</h3><p>Advance payments will appear here</p></div>`;
   }
-  closeModal('confirmModal');
-  switchPage(document.querySelector('.nav-item.active')?.dataset.page || 'dashboard');
+
+  let html = '';
+  const total = emp.advances.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
+  html += `<div style="background:var(--danger-dim);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+    <span style="font-size:13px;color:var(--danger);font-weight:600;">Total Advance Paid</span>
+    <span style="font-size:18px;font-weight:800;color:var(--danger);">${formatCurrency(total)}</span>
+  </div>`;
+
+  [...emp.advances].reverse().forEach((a, rIdx) => {
+    const realIdx = emp.advances.length - 1 - rIdx;
+    html += `
+      <div class="list-item">
+        <div class="list-icon advance"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="list-content">
+          <div class="list-title">${formatCurrency(a.amount)}</div>
+          <div class="list-sub">${a.note || 'No note'} &middot; ${formatDate(a.date)}</div>
+        </div>
+        <button class="delete-btn" onclick="event.stopPropagation();confirmDeleteAdvance(${emp.id},${realIdx})" title="Delete advance" aria-label="Delete advance">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    `;
+  });
+  return html;
+}
+
+function confirmDeleteShift(empId, shiftIndex) {
+  showConfirm('Delete Shift?', 'This shift will be permanently removed and remaining shifts for that date will be renumbered.', () => {
+    deleteShift(empId, shiftIndex);
+    showToast('Shift deleted', 'success');
+    renderEmployeeDetailPage({ id: empId });
+  });
+}
+
+function confirmDeleteAdvance(empId, advIndex) {
+  showConfirm('Delete Advance?', 'This advance payment record will be permanently removed.', () => {
+    deleteAdvance(empId, advIndex);
+    showToast('Advance deleted', 'success');
+    renderEmployeeDetailPage({ id: empId });
+  });
+}
+
+/* ========================================
+   数据导出
+======================================== */
+function exportData() {
+  if (appData.employees.length === 0) {
+    showToast('No data to export', 'error');
+    return;
+  }
+
+  const rows = [];
+  appData.employees.forEach(emp => {
+    emp.shifts.forEach(s => {
+      rows.push({
+        'Employee ID': emp.empId,
+        'Employee Name': emp.name,
+        'Date': s.date,
+        'Place': s.place,
+        'Customer': s.customer,
+        'Shift Number': s.shiftRoman,
+        'Shift Payment': s.payment,
+        'Type': 'Shift'
+      });
+    });
+    emp.advances.forEach(a => {
+      rows.push({
+        'Employee ID': emp.empId,
+        'Employee Name': emp.name,
+        'Date': a.date,
+        'Place': '',
+        'Customer': '',
+        'Shift Number': '',
+        'Shift Payment': '',
+        'Type': 'Advance',
+        'Advance Amount': a.amount,
+        'Note': a.note
+      });
+    });
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Data');
+
+  // 添加余额汇总表
+  const balanceRows = appData.employees.map(emp => {
+    const earned = emp.shifts.length * parseFloat(emp.rate || 0);
+    const adv = emp.advances.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
+    return {
+      'Employee ID': emp.empId,
+      'Name': emp.name,
+      'Total Shifts': emp.shifts.length,
+      'Rate': emp.rate,
+      'Total Earned': earned,
+      'Total Advance': adv,
+      'Remaining Balance': earned - adv
+    };
+  });
+  const ws2 = XLSX.utils.json_to_sheet(balanceRows);
+  XLSX.utils.book_append_sheet(wb, ws2, 'Balance Summary');
+
+  XLSX.writeFile(wb, `ShiftFlow_Export_${todayStr()}.xlsx`);
+  showToast('Data exported successfully', 'success');
+}
+
+/* ========================================
+   初始化
+======================================== */
+// 重写navigate以支持编辑员工
+const _originalNavigate = navigate;
+navigate = function(page, params) {
+  if (page === 'add-employee' && typeof params === 'number') {
+    renderAddEmployeePage(params);
+    currentPage = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(n => {
+      n.classList.remove('active');
+      if (n.dataset.page === page) n.classList.add('active');
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  _originalNavigate(page, params);
 };
 
-// ==================== INIT ====================
-refreshDashboard();
-
-// Set default date filter for shifts
-document.getElementById('shiftDateFilter').value = '';
-
-// Keyboard shortcut: Escape closes modals
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
-    closeDetail();
-  }
-});
-
-// Close modals on overlay click
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
+// 启动应用
+renderHomePage();
 </script>
 </body>
 </html>
